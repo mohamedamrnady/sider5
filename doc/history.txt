@@ -2,6 +2,35 @@ Sider 6 Release History
 =======================
 
 
+January 27, 2020
+v6.3.0
+- audio library to play music and sounds (MP3/WAV/FLAC)
+- all dependencies statically linked into sider.dll: no external DLLs needed
+- new HTML documentation
+
+
+January 9, 2020
+v6.2.5
+- support for 1.03.02 game exe
+- statically linking zlib 1.2.11
+
+
+December 19, 2019
+v6.2.4
+- support for PES 2020 Lite
+- new feature in memory library: memory.guard
+
+
+November 29, 2019
+v6.2.3
+- support for 1.02.02 game exe
+
+
+November 6, 2019
+v6.2.2
+- support for 1.02.01 game exe
+
+
 October 25, 2019
 v6.2.1
 - support for 1.02.00 game exe
