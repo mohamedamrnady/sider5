@@ -214,6 +214,52 @@ struct TROPHY_TABLE_ENTRY {
     DWORD trophy_id;
 };
 
+struct SCOREBOARD_INFO2 {
+    BYTE is_clock_running_normally;
+    BYTE unknown1;
+    BYTE some_counter;
+    BYTE unknown2;
+    BYTE unknown3[0x84];
+    BYTE match_stage; // 0x05 - live game, 0x0c - kick-off, 0x10 - pk shootout?
+    BYTE unknown4[3];
+    DWORD unknown5[4];
+    BYTE unknown6;
+    BYTE is_paused;
+    BYTE home_score;
+    BYTE away_score;
+    BYTE unknown7[0x80];
+    DWORD unknown8[3];
+    BYTE home_penalty_score;
+    BYTE away_penalty_score;
+    BYTE unknown9;
+    BYTE unknown10;
+    DWORD home_penalty_kicks[5]; // 0 - not taken yet, 1 - scored, 2 - missed
+    DWORD away_penalty_kicks[5]; // 0 - not taken yet, 1 - scored, 2 - missed
+};
+
+struct SCOREBOARD_INFO {
+    BYTE *vtable;
+    BYTE unknown1[0x18];
+    BYTE is_paused;
+    BYTE unknown2;
+    BYTE is_clock_running;
+    BYTE unknown3;
+    DWORD unknown4[5];
+    SCOREBOARD_INFO2 *sci2;
+    BYTE unknown5[0xe0];
+    DWORD home_score;
+    DWORD away_score;
+    DWORD unknown6;
+    DWORD clock_minutes;
+    DWORD clock_seconds;
+    DWORD unknown7;
+    BYTE is_injury_time;
+    BYTE unknown8[3];
+    DWORD clock_minutes_again;
+    DWORD clock_seconds_again;
+    DWORD added_minutes;
+};
+
 #define TT_LEN 0x148
 TROPHY_TABLE_ENTRY _trophy_table[TT_LEN];
 TROPHY_TABLE_ENTRY _trophy_map[TT_LEN];
@@ -231,6 +277,11 @@ void *_uniparam_base = NULL;
 KIT_STATUS_INFO *_ksi = NULL;
 TEAM_INFO_STRUCT *_home_team_info = NULL;
 TEAM_INFO_STRUCT *_away_team_info = NULL;
+
+extern "C" SCOREBOARD_INFO *_sci = NULL;
+BYTE *_sci_vtable = NULL;
+int _stats_table_index = 0;
+int _match_lib_index = 0;
 
 // home team encoded-id offset: 0x104
 // home team name offset:       0x108
@@ -250,7 +301,7 @@ const char *_context_fields[] = {
     "match_id", "match_info", "match_leg",// "match_time",
     "away_team", "home_team", "stadium_choice", "stadium",
     "weather", "weather_effects", "timeofday", "season",
-    "tournament_id", "mis", "difficulty", "extra_time", "penalties",
+    "tournament_id", "mis", "sci", "difficulty", "extra_time", "penalties",
 };
 size_t _context_fields_count = sizeof(_context_fields)/sizeof(const char *);
 
@@ -646,6 +697,8 @@ extern "C" void sider_clear_team_for_kits_hk();
 extern "C" BYTE* sider_loaded_uniparam(BYTE *uniparam);
 
 extern "C" void sider_loaded_uniparam_hk();
+
+extern "C" void sider_copy_clock_hk();
 
 static DWORD dwThreadId;
 static DWORD hookingThreadId = 0;
@@ -1539,6 +1592,87 @@ static int sider_log(lua_State *L) {
     logu_("[%s] %s\n", fname, s);
     lua_pop(L, 2);
     return 0;
+}
+
+static int sider_match_get_stats(lua_State *L) {
+    lua_pop(L, lua_gettop(L));
+    if (_sci == NULL) {
+        lua_pushnil(L);
+        return 1;
+    }
+    if (_sci_vtable == NULL) {
+        _sci_vtable = _sci->vtable;
+    }
+    else if (_sci_vtable != _sci->vtable) {
+        // looks like object has changed, or being destroyed
+        // do not try to use its fields
+        lua_pushnil(L);
+        return 1;
+    }
+
+    lua_pushvalue(L, lua_upvalueindex(1));
+
+    lua_pushstring(L, "ptr");
+    lua_pushlightuserdata(L, _sci);
+    lua_rawset(L, -3);
+
+    lua_pushstring(L, "home_score");
+    lua_pushnumber(L, _sci->home_score);
+    lua_rawset(L, -3);
+    lua_pushstring(L, "away_score");
+    lua_pushnumber(L, _sci->away_score);
+    lua_rawset(L, -3);
+    if (_sci->sci2 != NULL) {
+        lua_pushstring(L, "pk_home_score");
+        lua_pushnumber(L, _sci->sci2->home_penalty_score);
+        lua_rawset(L, -3);
+        lua_pushstring(L, "pk_away_score");
+        lua_pushnumber(L, _sci->sci2->away_penalty_score);
+        lua_rawset(L, -3);
+    }
+
+    int period = 0;
+    int minutes = _sci->clock_minutes;
+    if (_sci->sci2 != NULL) {
+        if (_sci->sci2->match_stage == 0x10) {
+            period = 5;
+        }
+        else {
+            if (minutes < 45) {
+                period = 1;
+            }
+            else if (minutes < 90) {
+                period = (_sci->is_injury_time) ? 1 : 2;
+            }
+            else if (minutes < 105) {
+                period = (_sci->is_injury_time) ? 2 : 3;
+            }
+            else if (minutes < 120) {
+                period = (_sci->is_injury_time) ? 3 : 4;
+            }
+            else {
+                period = 4;
+            }
+        }
+    }
+    lua_pushstring(L, "period");
+    lua_pushnumber(L, period);
+    lua_rawset(L, -3);
+    lua_pushstring(L, "clock_minutes");
+    lua_pushnumber(L, minutes);
+    lua_rawset(L, -3);
+    lua_pushstring(L, "clock_seconds");
+    lua_pushnumber(L, _sci->clock_seconds);
+    lua_rawset(L, -3);
+    lua_pushstring(L, "added_minutes");
+    if (_sci->added_minutes != 0xffffffff) {
+        lua_pushnumber(L, _sci->added_minutes);
+    }
+    else {
+        lua_pushnil(L);
+    }
+    lua_rawset(L, -3);
+    return 1;
 }
 
 void read_configuration(config_t*& config)
@@ -4158,6 +4292,8 @@ void sider_set_team_id(DWORD *dest, TEAM_INFO_STRUCT *team_info, DWORD offset)
         if (is_home) {
             clear_context_fields(_context_fields, _context_fields_count);
             _stadium_choice_count = 0;
+            _sci = NULL;
+            _sci_vtable = NULL;
         }
         else {
             _tournament_id = mi->tournament_id_encoded;
@@ -4185,13 +4321,13 @@ void sider_set_team_id(DWORD *dest, TEAM_INFO_STRUCT *team_info, DWORD offset)
 void sider_set_settings(STAD_STRUCT *dest_ss, STAD_STRUCT *src_ss)
 {
     MATCH_INFO_STRUCT *mi = (MATCH_INFO_STRUCT*)((BYTE*)dest_ss - 0x6c);
-    bool ok = mi && (mi->db0x03 >= 0 && mi->db0x03 <=6 ) && (mi->db0x17 == 0x17 || mi->db0x17 == 0x12);
+    bool ok = mi && (mi->num_subs >= 0 && mi->num_subs <=6 ) && (mi->db0x17 == 0x17 || mi->db0x17 == 0x12);
     if (!ok) {
         // safety check
-        DBG(16) logu_("%02x %02x\n", mi->db0x03, mi->db0x17);
+        DBG(16) logu_("%02x %02x %02x\n", mi->num_subs, mi->num_subs_et, mi->db0x17);
         return;
     }
-    DBG(16) logu_("%02x %02x (ok)\n", mi->db0x03, mi->db0x17);
+    DBG(16) logu_("%02x %02x %02x (ok)\n", mi->num_subs, mi->num_subs_et, mi->db0x17);
 
     logu_("tournament_id: %d\n", mi->tournament_id_encoded);
 
@@ -4289,6 +4425,8 @@ void sider_context_reset()
     _tournament_id = 0xffff;
     _stadium_choice_count = 0;
     _mi = NULL;
+    _sci = NULL;
+    _sci_vtable = NULL;
     _home_team_info = NULL;
     _away_team_info = NULL;
 
@@ -5367,6 +5505,10 @@ static void push_env_table(lua_State *L, const wchar_t *script_name)
     lua_pushvalue(L, _audio_lib_index);
     lua_setfield(L, -2, "audio");
 
+    // match lib
+    lua_pushvalue(L, _match_lib_index);
+    lua_setfield(L, -2, "match");
+
     // z lib
     init_z_lib(L);
     lua_setfield(L, -2, "zlib");
@@ -5461,6 +5603,18 @@ void init_lua_support()
         // audio library
         init_audio_lib(L);
         _audio_lib_index = lua_gettop(L);
+
+        // stats table
+        lua_newtable(L);
+        _stats_table_index = lua_gettop(L);
+
+        // match table
+        lua_newtable(L);
+        lua_pushstring(L, "stats");
+        lua_pushvalue(L, _stats_table_index);
+        lua_pushcclosure(L, sider_match_get_stats, 1);
+        lua_settable(L, -3);
+        _match_lib_index = lua_gettop(L);
 
         // kmp_search function
         lua_pushcfunction(L, sider_kmp_search);
@@ -5851,6 +6005,7 @@ DWORD install_func(LPVOID thread_param) {
     log_(L"overlay.vkey.next-module = 0x%02x\n", _config->_overlay_vkey_next_module);
     log_(L"overlay.toggle.sound = %s\n", _config->_overlay_toggle_sound.c_str());
     log_(L"overlay.toggle.sound-volume = %0.2f\n", _config->_overlay_toggle_sound_volume);
+    log_(L"match-stats.enabled = %d\n", _config->_match_stats_enabled);
     log_(L"vkey.reload-1 = 0x%02x\n", _config->_vkey_reload_1);
     log_(L"vkey.reload-2 = 0x%02x\n", _config->_vkey_reload_2);
     log_(L"close.on.exit = %d\n", _config->_close_sider_on_exit);
@@ -5905,7 +6060,7 @@ DWORD install_func(LPVOID thread_param) {
     hook_cache_t hcache(cache_file);
 
     // prepare patterns
-#define NUM_PATTERNS 28
+#define NUM_PATTERNS 29
     BYTE *frag[NUM_PATTERNS];
     frag[0] = lcpk_pattern_at_read_file;
     frag[1] = lcpk_pattern_at_get_size;
@@ -5935,6 +6090,7 @@ DWORD install_func(LPVOID thread_param) {
     frag[25] = pattern_set_team_for_kits;
     frag[26] = pattern_clear_team_for_kits;
     frag[27] = pattern_uniparam_loaded;
+    frag[28] = pattern_copy_clock;
 
     memset(_variations, 0xff, sizeof(_variations));
     _variations[0] = 23;
@@ -5971,7 +6127,7 @@ DWORD install_func(LPVOID thread_param) {
     frag_len[25] = _config->_lua_enabled ? sizeof(pattern_set_team_for_kits)-1 : 0;
     frag_len[26] = _config->_lua_enabled ? sizeof(pattern_clear_team_for_kits)-1 : 0;
     frag_len[27] = _config->_lua_enabled ? sizeof(pattern_uniparam_loaded)-1 : 0;
-    frag_len[28] = 0; //_config->_lua_enabled ? sizeof(pattern_call_to_move)-1 : 0;
+    frag_len[28] = _config->_lua_enabled ? sizeof(pattern_copy_clock)-1 : 0;
 
     int offs[NUM_PATTERNS];
     offs[0] = lcpk_offs_at_read_file;
@@ -6002,6 +6158,8 @@ DWORD install_func(LPVOID thread_param) {
     offs[25] = offs_set_team_for_kits;
     offs[26] = offs_clear_team_for_kits;
     offs[27] = offs_uniparam_loaded;
+    offs[28] = offs_copy_clock;
+
 
     BYTE **addrs[NUM_PATTERNS];
     addrs[0] = &_config->_hp_at_read_file;
@@ -6032,6 +6190,7 @@ DWORD install_func(LPVOID thread_param) {
     addrs[25] = &_config->_hp_at_set_team_for_kits;
     addrs[26] = &_config->_hp_at_clear_team_for_kits;
     addrs[27] = &_config->_hp_at_uniparam_loaded;
+    addrs[28] = &_config->_hp_at_copy_clock;
 
     // check hook cache first
     for (int i=0;; i++) {
@@ -6145,6 +6304,7 @@ bool all_found(config_t *cfg) {
             cfg->_hp_at_set_team_for_kits > 0 &&
             cfg->_hp_at_clear_team_for_kits > 0 &&
             cfg->_hp_at_uniparam_loaded > 0 &&
+            cfg->_hp_at_copy_clock > 0 &&
             true
         );
     }
@@ -6243,9 +6403,7 @@ bool hook_if_all_found() {
             log_(L"sider_trophy_check: %p\n", sider_trophy_check_hk);
             log_(L"sider_trophy_table: %p\n", sider_trophy_table_hk);
             log_(L"sider_context_reset: %p\n", sider_context_reset_hk);
-            */
             log_(L"sider_ball_name: %p\n", sider_ball_name_hk);
-            /*
             log_(L"sider_stadium_name: %p\n", sider_stadium_name_hk);
             log_(L"sider_def_stadium_name: %p\n", sider_def_stadium_name_hk);
             log_(L"sider_set_stadium_choice: %p\n", sider_set_stadium_choice_hk);
@@ -6275,17 +6433,17 @@ bool hook_if_all_found() {
                 hook_call_with_head_and_tail(_config->_hp_at_set_settings, (BYTE*)sider_set_settings_hk,
                     (BYTE*)pattern_set_settings_head, sizeof(pattern_set_settings_head)-1,
                     (BYTE*)pattern_set_settings_tail, sizeof(pattern_set_settings_tail)-1);
+
             if (_config->_hook_trophy_check)
                 hook_call_rcx(_config->_hp_at_trophy_check, (BYTE*)sider_trophy_check_hk, 0);
             if (_config->_hook_trophy_table)
                 hook_call_rcx(_config->_hp_at_trophy_table, (BYTE*)sider_trophy_table_hk, 0);
             if (_config->_hook_context_reset)
                 hook_call(_config->_hp_at_context_reset, (BYTE*)sider_context_reset_hk, 6);
-            */
+
             hook_call_with_head_and_tail(_config->_hp_at_ball_name, (BYTE*)sider_ball_name_hk,
                 (BYTE*)pattern_ball_name_head, sizeof(pattern_ball_name_head)-1,
                 (BYTE*)pattern_ball_name_tail, sizeof(pattern_ball_name_tail)-1);
-            /*
             hook_call_with_head_and_tail(_config->_hp_at_stadium_name, (BYTE*)sider_stadium_name_hk,
                 (BYTE*)pattern_stadium_name_head, sizeof(pattern_stadium_name_head)-1,
                 (BYTE*)pattern_stadium_name_tail, sizeof(pattern_stadium_name_tail)-1);
@@ -6298,10 +6456,6 @@ bool hook_if_all_found() {
             //    (BYTE*)pattern_set_stadium_choice_head, sizeof(pattern_set_stadium_choice_head)-1,
             //    (BYTE*)pattern_set_stadium_choice_tail, sizeof(pattern_set_stadium_choice_tail)-1);
 
-            // move next function (right after data_ready)
-            //move_code(_config->_hp_at_data_ready + 11, 1, 7);
-            //DWORD rel_offs = *(DWORD*)(_config->_hp_at_call_to_move + 1) + 1;
-            //patch_at_location(_config->_hp_at_call_to_move + 1, (BYTE*)&rel_offs, sizeof(DWORD));
 
             hook_jmp(_config->_hp_at_data_ready, (BYTE*)sider_data_ready_hk, 0);
 

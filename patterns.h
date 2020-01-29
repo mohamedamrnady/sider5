@@ -479,4 +479,17 @@ static BYTE pattern_uniparam_loaded[19] =
     "\x48\x8b\x74\x24\x50";
 static int offs_uniparam_loaded = -(0x81e - 0x7ee - 8);
 
+/*
+0000000140A32A78 | FF 0C                              | mov eax,dword ptr ds:[rdi+C]           |
+0000000140A32A7A | 89 86 2C 01 00 00                  | mov dword ptr ds:[rsi+12C],eax         | copy clock 2
+0000000140A32A5C | FF 0C                              | mov eax,dword ptr ds:[rdi+10]          |
+0000000140A32A5E | 89 86 30 01 00 00                  | mov dword ptr ds:[rsi+130],eax         |
+*/
+static BYTE pattern_copy_clock[17] =
+    "\xff\x0c"
+    "\x89\x86\x2c\x01\x00\x00"
+    "\xff\x0c"
+    "\x89\x86\x30\x01\x00\x00";
+static int offs_copy_clock = 0;
+
 #endif
