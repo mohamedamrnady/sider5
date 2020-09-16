@@ -2,6 +2,11 @@ Sider 5 Release History
 =======================
 
 
+September 15, 2020
+v7.0.0
+- initial release. Most things seem to work
+
+
 April 15, 2024
 v5.5.0
 - backport sider 6
