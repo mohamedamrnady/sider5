@@ -6620,7 +6620,7 @@ DWORD install_func(LPVOID thread_param) {
     frag[8] = pattern_context_reset;
     frag[9] = pattern_set_min_time;
     frag[10] = pattern_set_max_time;
-    frag[11] = pattern_set_minutes;
+    frag[11] = pattern_call_set_minutes;
     frag[12] = pattern_sider;
     frag[13] = pattern_trophy_table;
     frag[14] = pattern_ball_name;
@@ -6659,7 +6659,7 @@ DWORD install_func(LPVOID thread_param) {
     frag_len[8] = _config->_lua_enabled ? sizeof(pattern_context_reset)-1 : 0;
     frag_len[9] = 0; //sizeof(pattern_set_min_time)-1;
     frag_len[10] = sizeof(pattern_set_max_time)-1;
-    frag_len[11] = (_config->_num_minutes > 0) ? sizeof(pattern_set_minutes)-1 : 0;
+    frag_len[11] = (_config->_num_minutes > 0) ? sizeof(pattern_call_set_minutes)-1 : 0;
     frag_len[12] = _config->_free_side_select ? sizeof(pattern_sider)-1 : 0;
     frag_len[13] = _config->_lua_enabled ? sizeof(pattern_trophy_table)-1 : 0;
     frag_len[14] = _config->_lua_enabled ? sizeof(pattern_ball_name)-1 : 0;
@@ -6692,7 +6692,7 @@ DWORD install_func(LPVOID thread_param) {
     offs[8] = offs_context_reset;
     offs[9] = offs_set_min_time;
     offs[10] = offs_set_max_time;
-    offs[11] = offs_set_minutes;
+    offs[11] = offs_call_set_minutes;
     offs[12] = offs_sider;
     offs[13] = offs_trophy_table;
     offs[14] = offs_ball_name;
@@ -6726,7 +6726,7 @@ DWORD install_func(LPVOID thread_param) {
     addrs[8] = &_config->_hp_at_context_reset;
     addrs[9] = &_config->_hp_at_set_min_time;
     addrs[10] = &_config->_hp_at_set_max_time;
-    addrs[11] = &_config->_hp_at_set_minutes;
+    addrs[11] = &_config->_hp_at_call_set_minutes;
     addrs[12] = &_config->_hp_at_sider;
     addrs[13] = &_config->_hp_at_trophy_table;
     addrs[14] = &_config->_hp_at_ball_name;
@@ -6869,7 +6869,7 @@ bool all_found(config_t *cfg) {
         all = all && (
             //cfg->_hp_at_set_min_time > 0 &&
             cfg->_hp_at_set_max_time > 0 &&
-            cfg->_hp_at_set_minutes > 0
+            cfg->_hp_at_call_set_minutes > 0
         );
     }
     if (cfg->_overlay_enabled) {
@@ -7062,8 +7062,9 @@ bool hook_if_all_found() {
                 _config->_num_minutes = 255;
             }
             logu_("Setting match minutes to: %d\n", _config->_num_minutes);
+            BYTE *cs = get_target_location2(_config->_hp_at_call_set_minutes);
             patch_set_minutes[3] = _config->_num_minutes;
-            patch_at_location(_config->_hp_at_set_minutes, patch_set_minutes, sizeof(patch_set_minutes)-1);
+            patch_at_location(cs, patch_set_minutes, sizeof(patch_set_minutes)-1);
         }
     }
 
