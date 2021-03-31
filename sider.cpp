@@ -760,7 +760,6 @@ static HHOOK kb_handle = 0;
 
 bool _overlay_on(false);
 bool _block_input(false);
-bool _hard_block(false);
 bool _reload_1_down(false);
 bool _reload_modified(false);
 bool _is_game(false);
@@ -3998,8 +3997,8 @@ HRESULT sider_GetDeviceStateGamepad(IDirectInputDevice8 *self, DWORD cbData, LPV
     HRESULT res = org_f(self, cbData, lpvData);
     **/
     HRESULT res = _org_GetDeviceStateGamepad(self, cbData, lpvData);
-    if (_overlay_on) {
-        if (g_IDirectInputDevice8 && self != g_IDirectInputDevice8) {
+    if (_overlay_on && (_config->_global_block_input || _block_input)) {
+        if (self != g_IDirectInputDevice8) {
             // block input to game
             return DIERR_INPUTLOST;
         }
@@ -4023,7 +4022,7 @@ HRESULT sider_GetDeviceStateKeyboard(IDirectInputDevice8 *self, DWORD cbData, LP
     HRESULT res = org_f(self, cbData, lpvData);
     **/
     HRESULT res = _org_GetDeviceStateKeyboard(self, cbData, lpvData);
-    if (_overlay_on) {
+    if (_overlay_on && (_config->_global_block_input || _block_input)) {
         // block input to game
         return DIERR_INPUTLOST;
     }
@@ -4034,7 +4033,7 @@ HRESULT sider_GetDeviceStateKeyboard(IDirectInputDevice8 *self, DWORD cbData, LP
 DWORD sider_XInputGetState(DWORD dwUserIndex, XINPUT_STATE *pState)
 {
     DBG(16384) logu_("sider_XInputGetState(dwUserIndex:%x, pState:%p): called\n", dwUserIndex, pState);
-    if (_overlay_on) {
+    if (_overlay_on && (_config->_global_block_input || _block_input)) {
         // block input to game
         return ERROR_SUCCESS;
     }
