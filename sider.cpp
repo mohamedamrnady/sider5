@@ -412,21 +412,24 @@ HRESULT sider_CreateDXGIFactory1(REFIID riid, void **ppFactory);
 HRESULT sider_CreateSwapChain(IDXGIFactory1 *pFactory, IUnknown *pDevice, DXGI_SWAP_CHAIN_DESC *pDesc, IDXGISwapChain **ppSwapChain);
 HRESULT sider_Present(IDXGISwapChain *swapChain, UINT SyncInterval, UINT Flags);
 
+typedef DWORD (*PFN_XInputGetState)(DWORD dwUserIndex, XINPUT_STATE *pState);
 typedef HRESULT (*PFN_IDirectInput8_CreateDevice)(IDirectInput8 *self, REFGUID rguid, LPDIRECTINPUTDEVICE * lplpDirectInputDevice, LPUNKNOWN pUnkOuter);
 typedef HRESULT (*PFN_IDirectInputDevice8_GetDeviceState)(IDirectInputDevice8 *self, DWORD cbData, LPVOID lpvData);
-typedef HRESULT (*PFN_IDirectInputDevice8_GetDeviceData)(IDirectInputDevice8 *self, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod,
-         LPDWORD pdwInOut, DWORD dwFlags);
-typedef HRESULT (*PFN_IDirectInputDevice8_Poll)(IDirectInputDevice8 *self);
+//typedef HRESULT (*PFN_IDirectInputDevice8_GetDeviceData)(IDirectInputDevice8 *self, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod,
+//         LPDWORD pdwInOut, DWORD dwFlags);
+//typedef HRESULT (*PFN_IDirectInputDevice8_Poll)(IDirectInputDevice8 *self);
+PFN_XInputGetState _org_XInputGetState;
 PFN_IDirectInput8_CreateDevice _org_CreateDevice;
 PFN_IDirectInputDevice8_GetDeviceState _org_GetDeviceStateKeyboard;
 PFN_IDirectInputDevice8_GetDeviceState _org_GetDeviceStateGamepad;
-PFN_IDirectInputDevice8_GetDeviceData _org_GetDeviceData;
-PFN_IDirectInputDevice8_Poll _org_Poll;
+//PFN_IDirectInputDevice8_GetDeviceData _org_GetDeviceData;
+//PFN_IDirectInputDevice8_Poll _org_Poll;
+DWORD sider_XInputGetState(DWORD dwUserIndex, XINPUT_STATE *pState);
 HRESULT sider_CreateDevice(IDirectInput8 *self, REFGUID rguid, LPDIRECTINPUTDEVICE * lplpDirectInputDevice, LPUNKNOWN pUnkOuter);
 HRESULT sider_GetDeviceStateKeyboard(IDirectInputDevice8 *self, DWORD cbData, LPVOID lpvData);
 HRESULT sider_GetDeviceStateGamepad(IDirectInputDevice8 *self, DWORD cbData, LPVOID lpvData);
-HRESULT sider_GetDeviceData(IDirectInputDevice8 *self, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags);
-HRESULT sider_Poll(IDirectInputDevice8 *self);
+//HRESULT sider_GetDeviceData(IDirectInputDevice8 *self, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags);
+//HRESULT sider_Poll(IDirectInputDevice8 *self);
 map<BYTE**, BYTE*> _vtables;
 
 BOOL sider_device_enum_callback(LPCDIDEVICEINSTANCE lppdi, LPVOID pvRef);
@@ -434,6 +437,7 @@ BOOL sider_device_enum_callback(LPCDIDEVICEINSTANCE lppdi, LPVOID pvRef);
 BOOL sider_object_enum_callback(LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef);
 void init_direct_input();
 void enumerate_controllers();
+BYTE **_xinput_get_state_holder(NULL);
 
 ID3D11Device *_device(NULL);
 ID3D11DeviceContext *_device_context(NULL);
@@ -3979,13 +3983,6 @@ HRESULT sider_CreateDevice(IDirectInput8 *self, REFGUID rguid, LPDIRECTINPUTDEVI
     return res;
 }
 
-HRESULT sider_GetDeviceData(IDirectInputDevice8 *self, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags)
-{
-    logu_("sider_GetDeviceData called for %p\n", self);
-    HRESULT res = _org_GetDeviceData(self, cbObjectData, rgdod, pdwInOut, dwFlags);
-    return res;
-}
-
 HRESULT sider_GetDeviceStateGamepad(IDirectInputDevice8 *self, DWORD cbData, LPVOID lpvData)
 {
     DBG(16384) logu_("sider_GetDeviceStateGamepad(self:%p): called\n", self);
@@ -4027,20 +4024,39 @@ HRESULT sider_GetDeviceStateKeyboard(IDirectInputDevice8 *self, DWORD cbData, LP
     **/
     HRESULT res = _org_GetDeviceStateKeyboard(self, cbData, lpvData);
     if (_overlay_on) {
-        if (g_IDirectInputDevice8 && self != g_IDirectInputDevice8) {
-            // block input to game
-            return DIERR_INPUTLOST;
-        }
+        // block input to game
+        return DIERR_INPUTLOST;
     }
     DBG(16384) logu_("sider_GetDeviceStateKeyboard(self:%p): res = %x\n", self, res);
     return res;
 }
 
-HRESULT sider_Poll(IDirectInputDevice8 *self)
+DWORD sider_XInputGetState(DWORD dwUserIndex, XINPUT_STATE *pState)
 {
-    logu_("sider_Poll called for %p\n", self);
-    HRESULT res = _org_Poll(self);
+    DBG(16384) logu_("sider_XInputGetState(dwUserIndex:%x, pState:%p): called\n", dwUserIndex, pState);
+    if (_overlay_on) {
+        // block input to game
+        return ERROR_SUCCESS;
+    }
+    DWORD res = _org_XInputGetState(dwUserIndex, pState);
     return res;
+}
+
+void HookXInputGetState()
+{
+    log_(L"XInputGetState: %p\n", XInputGetState);
+    BYTE *jmp_xinput_get_state = get_target_location2(_config->_hp_at_xinput);
+    if (jmp_xinput_get_state) {
+        _xinput_get_state_holder = (BYTE**)get_target_location(jmp_xinput_get_state);
+        log_(L"xinput_get_state_holder: %p\n", _xinput_get_state_holder);
+        if (_xinput_get_state_holder) {
+            _org_XInputGetState = (PFN_XInputGetState)(*_xinput_get_state_holder);
+            log_(L"_org_XInputGetState: %p\n", _org_XInputGetState);
+
+            *_xinput_get_state_holder = (BYTE*)sider_XInputGetState;
+            log_(L"now XInputGetState: %p\n", *_xinput_get_state_holder);
+        }
+    }
 }
 
 HRESULT sider_Present(IDXGISwapChain *swapChain, UINT SyncInterval, UINT Flags)
