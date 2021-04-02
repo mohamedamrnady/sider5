@@ -5658,17 +5658,27 @@ static int sider_context_refresh_kit(lua_State *L)
     return 0;
 }
 
-static int sider_context_get_input_blocked(lua_State *L)
+static int sider_input_is_blocked(lua_State *L)
 {
     lua_pushboolean(L, _block_input);
     return 1;
 }
 
-static int sider_context_set_input_blocked(lua_State *L)
+static int sider_input_set_blocked(lua_State *L)
 {
     int val = lua_toboolean(L, 1);
-    _block_input = (val != 0);
     lua_pop(L, 1);
+    module_t *m = (module_t*)lua_topointer(L, lua_upvalueindex(1));
+    if (!m) {
+        lua_pushstring(L, "fatal problem: current module is unknown");
+        return lua_error(L);
+    }
+    module_t *om = (_curr_overlay_m == _modules.end()) ? NULL : (*_curr_overlay_m);
+    if (!om || m != om) {
+        lua_pushfstring(L, "only module that currently controls overlay can block input");
+        return lua_error(L);
+    }
+    _block_input = (val != 0);
     return 0;
 }
 
@@ -5898,10 +5908,6 @@ static void push_context_table(lua_State *L)
 
     lua_pushcfunction(L, sider_context_register);
     lua_setfield(L, -2, "register");
-    lua_pushcfunction(L, sider_context_get_input_blocked);
-    lua_setfield(L, -2, "get_input_blocked");
-    lua_pushcfunction(L, sider_context_set_input_blocked);
-    lua_setfield(L, -2, "set_input_blocked");
 
     // ctx.kits
     lua_newtable(L);
