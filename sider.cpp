@@ -760,6 +760,7 @@ static HHOOK kb_handle = 0;
 
 bool _overlay_on(false);
 bool _block_input(false);
+bool _hard_block(false);
 bool _reload_1_down(false);
 bool _reload_modified(false);
 bool _is_game(false);
@@ -2559,6 +2560,7 @@ void module_hide(module_t *m)
         }
     }
     _block_input = false;
+    _hard_block = false;
     LeaveCriticalSection(&_cs);
 }
 
@@ -5661,13 +5663,22 @@ static int sider_context_refresh_kit(lua_State *L)
 static int sider_input_is_blocked(lua_State *L)
 {
     lua_pushboolean(L, _block_input);
-    return 1;
+    lua_pushboolean(L, _hard_block);
+    return 2;
 }
 
 static int sider_input_set_blocked(lua_State *L)
 {
-    int val = lua_toboolean(L, 1);
-    lua_pop(L, 1);
+    int val = 0;
+    if (lua_gettop(L) > 0) {
+        val = lua_toboolean(L, 1);
+        lua_pop(L, 1);
+    }
+    int hard = 0;
+    if (lua_gettop(L) > 0) {
+        hard = lua_toboolean(L, 1);
+        lua_pop(L, 1);
+    }
     module_t *m = (module_t*)lua_topointer(L, lua_upvalueindex(1));
     if (!m) {
         lua_pushstring(L, "fatal problem: current module is unknown");
@@ -5679,6 +5690,7 @@ static int sider_input_set_blocked(lua_State *L)
         return lua_error(L);
     }
     _block_input = (val != 0);
+    _hard_block = (hard != 0) && _block_input;
     return 0;
 }
 
