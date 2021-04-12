@@ -6840,7 +6840,7 @@ bool all_found(config_t *cfg) {
             cfg->_hp_at_set_settings > 0 &&
             cfg->_hp_at_trophy_check > 0 &&
             cfg->_hp_at_trophy_table > 0 &&
-            //cfg->_hp_at_ball_name > 0 &&  // Lite does not have it
+            cfg->_hp_at_ball_name > 0 &&
             cfg->_hp_at_stadium_name > 0 &&
             cfg->_hp_at_def_stadium_name > 0 &&
             cfg->_hp_at_context_reset > 0 &&
