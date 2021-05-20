@@ -6906,7 +6906,13 @@ void _install_func(IMAGE_SECTION_HEADER *h, int npatt, BYTE **frag, size_t *frag
             continue;
         }
         if (_variations[j]!=0xff) {
-            log_(L"Found pattern %i (%i) of %i\n", j+1, _variations[j]+1, NUM_PATTERNS);
+            log_(L"Found pattern %i (%i", j, _variations[j]);
+            for (int k=0; k<sizeof(_variations)/sizeof(BYTE); k++) {
+                if (_variations[j] != k && _variations[k] == j) {
+                    log_(L",%i", k);
+                }
+            }
+            log_(L") of %i (at %p)\n", NUM_PATTERNS, p);
         }
         else {
             log_(L"Found pattern %i of %i\n", j+1, NUM_PATTERNS);
