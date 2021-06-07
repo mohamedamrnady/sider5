@@ -356,6 +356,17 @@ overlay.block-input-when-on = 0
 game controllers to the game, when overlay is on. (Defaults to 0 - no blocking)</p>
 
 <pre>
+overlay.gamepad-input-blocking.enabled = 1
+</pre>
+
+<p>- if set to 0, then sider will not enforce input blocking for gamepads.
+(Defaults to 1 - blocking logic enabled).<br />
+Normally, you do not need to worry about this, but if you experience an early
+crash, pretty much on startup, before the game even is able to show the red
+Konami screen, then try setting this option to 0. It should help.
+</p>
+
+<pre>
 vkey.reload-1 = 0x10
 vkey.reload-2 = 0x52
 </pre>
