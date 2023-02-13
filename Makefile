@@ -57,6 +57,7 @@ imageutil.obj: imageutil.cpp imageutil.h
 version.obj: version.cpp
 libz.obj: libz.cpp libz.h common.h
 kitinfo.obj: kitinfo.cpp kitinfo.h
+
 memlib.obj: memlib.h memlib_lua.h memlib.cpp
 memlib_lua.h: memory.lua makememlibhdr.exe
 	makememlibhdr.exe
