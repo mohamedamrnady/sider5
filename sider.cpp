@@ -3878,8 +3878,6 @@ HRESULT sider_CreateSwapChain(IDXGIFactory1 *pFactory, IUnknown *pDevice, DXGI_S
         logu_("==> window handle: %p\n", DX11.Window);
     }
 
-    prep_stuff();
-
     // check if we need to hook Present method
     IDXGISwapChain *sc = (IDXGISwapChain*)(*ppSwapChain);
     BYTE** vtbl = *(BYTE***)sc;
@@ -3889,6 +3887,8 @@ HRESULT sider_CreateSwapChain(IDXGIFactory1 *pFactory, IUnknown *pDevice, DXGI_S
         DBG(64) logu_("Present already hooked.\n");
     }
     else {
+        prep_stuff();
+
         logu_("Hooking Present\n");
         _org_Present = present;
         logu_("_org_Present = %p\n", _org_Present);
