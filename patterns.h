@@ -202,7 +202,7 @@ static BYTE pattern_call_set_minutes[11] =
     "\xc3"
     "\xcc\xcc\xcc\xcc\xcc\xcc";
 static int offs_call_set_minutes = 0;
-static BYTE patch_call_set_minutes[6] =
+static BYTE patch_set_minutes[6] =
     "\xc6\x41\x1c\x0a"
     "\xc3";
 
