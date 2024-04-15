@@ -51,7 +51,14 @@ local game_info = {
 	fanview_camera_zoom = { base = "camera", offs = 0x08, format = "f", len = 4, def = 25.60 },
 	fanview_camera_height = { base = "camera", offs = 0x0c, format = "f", len = 4, def = 0.43 },
 	fanview_camera_angle = { base = "camera", offs = 0x24, format = "f", len = 4, def = 1 },
-	replays = { base = "replays", offs = 0x04, format = "", len = 1, def = "on", value_map = { on = "\x04", off = "\x07" } },
+	replays = {
+		base = "replays",
+		offs = 0x04,
+		format = "",
+		len = 1,
+		def = "on",
+		value_map = { on = "\x04", off = "\x07" },
+	},
 }
 
 local function load_ini(ctx, filename)
