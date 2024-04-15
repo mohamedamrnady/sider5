@@ -19,7 +19,7 @@ BEGIN
 		BEGIN
 			VALUE "FileDescription", "Sider: toolbox for PES\0"
 			VALUE "FileVersion", "5.5.0.0\0"
-			VALUE "LegalCopyright", "Copyright � 2014-2019 Juce\0"
+			VALUE "LegalCopyright", "Copyright � 2014-2024 Juce\0"
 			VALUE "Comments", "Sider.\r\n\
 Companion program for Pro Evolution Soccer 2019.\0"
 		END
