@@ -2,7 +2,7 @@
 =========================
 
 inputdemo module v2.0
-Requires: sider.dll 6.4.0+
+Requires: sider.dll 5.5.0+
 
 Demonstrates usage of: "overlay_on", "key_down" and "gamepad_input" events
 
@@ -31,59 +31,65 @@ local lines = {}
 local MAX_LINES = 20
 
 function m.overlay_on(ctx)
-    return string.format([[version %s | game input blocked: %s
+	return string.format(
+		[[version %s | game input blocked: %s
 Press buttons on keyboard, move sticks or press buttons on gamepad
 Toggle input blocking on/off with [0] key
 Last %s events:
 
-%s]], version, flag, MAX_LINES, text)
+%s]],
+		version,
+		flag,
+		MAX_LINES,
+		text
+	)
 end
 
 function m.show(ctx)
-    input.set_blocked(flag)
-    flag = input.is_blocked()
+	input.set_blocked(flag)
+	flag = input.is_blocked()
 end
 
 local function get_last(t, n)
-    local new_t = {}
-    local first = math.max(1, #t - n + 1)
-    for i=first,first+n-1 do
-        new_t[#new_t + 1] = t[i]
-    end
-    return new_t
+	local new_t = {}
+	local first = math.max(1, #t - n + 1)
+	for i = first, first + n - 1 do
+		new_t[#new_t + 1] = t[i]
+	end
+	return new_t
 end
 
 function m.key_down(ctx, vkey)
-    lines[#lines + 1] = string.format("Key down: vkey=0x%x", vkey)
-    lines = get_last(lines, MAX_LINES)
-    text = table.concat(lines, '\n')
+	lines[#lines + 1] = string.format("Key down: vkey=0x%x", vkey)
+	lines = get_last(lines, MAX_LINES)
+	text = table.concat(lines, "\n")
 end
 
 function m.key_up(ctx, vkey)
-    lines[#lines + 1] = string.format("Key up: vkey=0x%x", vkey)
-    lines = get_last(lines, MAX_LINES)
-    text = table.concat(lines, '\n')
-    if vkey == 0x30 then
-        flag = not flag
-        input.set_blocked(flag)
-    end
+	lines[#lines + 1] = string.format("Key up: vkey=0x%x", vkey)
+	lines = get_last(lines, MAX_LINES)
+	text = table.concat(lines, "\n")
+	if vkey == 0x30 then
+		flag = not flag
+		input.set_blocked(flag)
+	end
 end
 
 function m.gamepad_input(ctx, inputs)
-    for name,value in pairs(inputs) do
-        lines[#lines + 1] = string.format("Gamepad input event: name=%s, value=%d", name, value)
-    end
-    lines = get_last(lines, MAX_LINES)
-    text = table.concat(lines, '\n')
+	for name, value in pairs(inputs) do
+		lines[#lines + 1] = string.format("Gamepad input event: name=%s, value=%d", name, value)
+	end
+	lines = get_last(lines, MAX_LINES)
+	text = table.concat(lines, "\n")
 end
 
 function m.init(ctx)
-    -- register for events
-    ctx.register("overlay_on", m.overlay_on)
-    ctx.register("key_down", m.key_down)
-    ctx.register("key_up", m.key_up)
-    ctx.register("gamepad_input", m.gamepad_input)
-    ctx.register("show", m.show)
+	-- register for events
+	ctx.register("overlay_on", m.overlay_on)
+	ctx.register("key_down", m.key_down)
+	ctx.register("key_up", m.key_up)
+	ctx.register("gamepad_input", m.gamepad_input)
+	ctx.register("show", m.show)
 end
 
 return m
