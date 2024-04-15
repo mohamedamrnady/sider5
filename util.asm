@@ -36,9 +36,10 @@ sider_read_file_hk proc
         mov     rax,[rsp+28h]
         sub     rsp,38h
         mov     [rsp+20h],rax
-        mov     [rsp+28h],r12
+        mov     rax,[r9+20h]
+        mov     [rsp+28h],rax
         call    sider_read_file
-        mov     r12,[rsp+28h]
+        ;mov     r12,[rsp+28h]
         add     rsp,38h
         ret
 
@@ -51,7 +52,7 @@ sider_get_size_hk proc
         mov     rcx,rsi
         mov     rdx,rbx
         call    sider_get_size
-        mov     rcx,qword ptr [rdi+1d8h]
+        mov     rcx,qword ptr [rdi+1d0h]
         mov     eax,1
         mov     rdx,[rsp+20h]
         add     rsp,28h
@@ -64,19 +65,19 @@ sider_extend_cpk_hk proc
         mov     rax,1000000000000000h
         mov     qword ptr [rdi+8],rax
         mov     qword ptr [r13],rdi
+        xor     rax,rax
         ret
 
 sider_extend_cpk_hk endp
 
 sider_mem_copy_hk proc
 
-        push    r12
+        push    rsp
         sub     rsp,20h
-        add     r8,r10
+        mov     rcx,r11
         call    sider_mem_copy
         mov     qword ptr [rdi+10h],rbx
-        add     rsp,20h
-        pop     r12
+        add     rsp,28h
         ret
 
 sider_mem_copy_hk endp
@@ -86,7 +87,7 @@ sider_lookup_file_hk proc
         push    rax
         sub     rsp,20h
         call    sider_lookup_file
-        lea     rcx,qword ptr [rdi+110h]
+        lea     rcx,qword ptr [rdi+108h]
         mov     r8,rsi
         lea     rdx,qword ptr [rsp+50h]
         add     rsp,20h
@@ -115,8 +116,8 @@ sider_set_team_id_hk proc
         mov     [rsp+30h],rax
         cmp     eax,2
         jge     done
-        imul    r8,rax,5ech
-        add     rcx,118h
+        imul    r8,rax,654h
+        add     rcx,138h
         add     rcx,r8
         mov     [rsp+20h],rcx
         mov     [rsp+28h],r8
@@ -149,10 +150,8 @@ sider_set_settings_hk proc
         push    r10
         push    r11
         sub     rsp,20h
-        movzx   eax,byte ptr [rdx+97h]
-        mov     byte ptr [rcx+97h],al
-        mov     eax,dword ptr [rdx+98h]
-        mov     dword ptr [rcx+98h],eax
+        mov     rax,qword ptr [rdx+98h]
+        mov     qword ptr [rcx+98h],rax
         call    sider_set_settings
         add     rsp,20h
         pop     r11
@@ -170,11 +169,11 @@ sider_trophy_check_hk proc
 
         push    rax
         sub     rsp,20h
-        mov     ecx,dword ptr [rbp+488h]
+        mov     ecx,dword ptr [rsi+498h]
         call    sider_trophy_check
         mov     ecx,eax
         and     r14b,1
-        sar     esi,1
+        sar     ebp,1
         add     rsp,20h
         pop     rax
         ret
@@ -191,7 +190,7 @@ sider_context_reset_hk proc
         push    r11
         sub     rsp,28h
         mov     qword ptr [rbx+84h],rcx
-        mov     qword ptr [rbx+21f74h],0ffffffffh
+        mov     qword ptr [rbx+201c4h],0ffffffffh
         call    sider_context_reset
         add     rsp,28h
         pop     r11
@@ -333,7 +332,7 @@ sider_set_stadium_choice_hk proc
         push    r9
         push    r10
         push    r11
-        sub     rsp,28h
+        sub     rsp,28h   ; we get here via jmp, but stack still needs correct alignment
         call    sider_set_stadium_choice
         add     rsp,28h
         pop     r11
@@ -353,25 +352,24 @@ sider_set_stadium_choice_hk endp
 sider_check_kit_choice_hk proc
 
         push    rcx
-        push    rdx
         push    r8
         push    r9
         push    r10
         push    r11
-        push    r15
-        sub     rsp,20h
-        mov     rcx,rdi   ;mis - match info struct
-        mov     rdx,rbx   ;0/1 - home/away
+        push    r14
+        sub     rsp,28h
+        mov     rcx,r14   ;mis - match info struct
+        mov     rdx,r10   ;0/1 - home/away
         call    sider_check_kit_choice
-        add     rsp,20h
-        pop     r15
-        mov     byte ptr [r15-2],1
-        mov     byte ptr [r15],0
+        add     rsp,28h
+        pop     r14
+        mov     byte ptr [r13-2],1
+        mov     byte ptr [r13],0
+        mov     edx,esi
         pop     r11
         pop     r10
         pop     r9
         pop     r8
-        pop     rdx
         pop     rcx
         ret
 
@@ -426,9 +424,9 @@ sider_kit_status_hk proc
         mov     rcx,rbx
         mov     rdx,rax
         call    sider_kit_status
-        movzx   r9d, byte ptr [rbx+4eh]
-        movzx   r8d, byte ptr [rbx+4dh]
-        movzx   rdx, byte ptr [rbx+4ch]
+        movzx   r9d, byte ptr [rbx+4ah]
+        movzx   r8d, byte ptr [rbx+49h]
+        movzx   rdx, byte ptr [rbx+48h]
         add     rsp,28h
         pop     rax
         pop     r11
@@ -453,9 +451,8 @@ sider_set_team_for_kits_hk proc
         xor     edx,eax
         and     edx,3fffh
         xor     edx,eax
-        mov     dword ptr [r9+10h],edx
+        mov     dword ptr [r9],edx
         mov     rcx,rbx
-        add     r9,10h
         call    sider_set_team_for_kits
         mov     rcx,3fffh
         add     rsp,28h
@@ -480,10 +477,10 @@ sider_clear_team_for_kits_hk proc
         push    r10
         push    r11
         sub     rsp,28h
-        mov     dword ptr [rdx-4h],ecx
+        mov     dword ptr [rdx],ecx
         mov     dword ptr [rdx+18h],0ffffh
+        mov     dword ptr [rdx+30h],0ffffffffh
         mov     rcx,rbx
-        sub     rdx,4
         call    sider_clear_team_for_kits
         mov     rax,3fffh
         add     rsp,28h
@@ -512,7 +509,7 @@ sider_loaded_uniparam_hk proc
         sub     rsp,28h
         mov     rcx,rax
         call    sider_loaded_uniparam
-        mov     [rsi+38h],rax
+        mov     [rsi+48h],rax
         add     rsp,28h
         pop     r11
         pop     r10

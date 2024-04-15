@@ -673,7 +673,7 @@ extern "C" void sider_get_size_hk();
 
 extern "C" void sider_extend_cpk_hk();
 
-extern "C" void sider_mem_copy(BYTE *dst, LONGLONG dst_len, BYTE *src, LONGLONG src_len, struct READ_STRUCT *rs);
+extern "C" void sider_mem_copy(BYTE *dst, LONGLONG dst_len, BYTE *src, LONGLONG src_len, BYTE **rsp);
 
 extern "C" void sider_mem_copy_hk();
 
@@ -717,7 +717,7 @@ extern "C" STAD_INFO_STRUCT* sider_def_stadium_name(DWORD stadium_id);
 
 extern "C" void sider_def_stadium_name_hk();
 
-extern "C" void sider_set_stadium_choice(MATCH_INFO_STRUCT *mi, BYTE stadium_id);
+extern "C" void sider_set_stadium_choice(MATCH_INFO_STRUCT *mi, WORD stadium_id);
 
 extern "C" void sider_set_stadium_choice_hk();
 
@@ -2153,7 +2153,7 @@ bool module_set_match_time(module_t *m, DWORD *num_minutes)
     return res;
 }
 
-bool module_set_stadium_choice(module_t *m, BYTE stadium_id, BYTE *new_stadium_id)
+bool module_set_stadium_choice(module_t *m, WORD stadium_id, WORD *new_stadium_id)
 {
     bool res(false);
     if (m->evt_set_stadium_choice != 0) {
@@ -4393,7 +4393,8 @@ BOOL sider_read_file(
     //log_(L"rs (R12) = %p\n", rs);
     if (rs && !IsBadReadPtr(rs, sizeof(struct READ_STRUCT))) {
         BYTE* p = (BYTE*)rs;
-        fli = *((FILE_LOAD_INFO **)(p - 0x18));
+        fli = (FILE_LOAD_INFO *)p;
+        //DBG(3) logu_("read_file:: fli = %p\n", fli);
 
         wchar_t *fn;
         { PERF_TIMER(_fileops_stats); if (!have_cached(rs->filename, &fn)) {
@@ -4428,7 +4429,7 @@ BOOL sider_read_file(
                 rs->offset.parts.high = offsetHigh;
                 LONGLONG offset = rs->offset.full;
 
-                if (fli) {
+                if (fli && !IsBadReadPtr(fli, sizeof(struct FILE_LOAD_INFO))) {
                     // adjust offset for multi-part reads
                     SetFilePointer(hFile, fli->bytes_read_so_far, NULL, FILE_CURRENT);
                     offset = offset + fli->bytes_read_so_far;
@@ -4499,7 +4500,7 @@ BOOL sider_read_file(
     return result;
 }
 
-void sider_mem_copy(BYTE *dst, LONGLONG dst_len, BYTE *src, LONGLONG src_len, struct READ_STRUCT *rs)
+void sider_mem_copy(BYTE *dst, LONGLONG dst_len, BYTE *src, LONGLONG src_len, BYTE **rsp)
 {
     HANDLE handle = INVALID_HANDLE_VALUE;
     wstring *filename = NULL;
@@ -4512,9 +4513,16 @@ void sider_mem_copy(BYTE *dst, LONGLONG dst_len, BYTE *src, LONGLONG src_len, st
 
     LONGLONG dst_len_used = dst_len;
 
+    // dump some stack
+    //for (int i=0; i<(0x100/8); i++) {
+    //    DBG(1) logu_("mem_copy:: %p (%x): %p\n", rsp+i, i, *(rsp+i));
+    //}
+
+    struct READ_STRUCT *rs = (struct READ_STRUCT*)*(rsp+0xf);
     if (rs) {
         BYTE* p = (BYTE*)rs;
-        FILE_LOAD_INFO *fli = *((FILE_LOAD_INFO **)(p - 0x18));
+        FILE_LOAD_INFO *fli = (FILE_LOAD_INFO *)p;
+        //DBG(3) logu_("mem_copy:: fli = %p\n", fli);
 
         wchar_t *fn(NULL);
         { PERF_TIMER(_fileops_stats); if (!have_cached(rs->filename, &fn)) {
@@ -4545,7 +4553,7 @@ void sider_mem_copy(BYTE *dst, LONGLONG dst_len, BYTE *src, LONGLONG src_len, st
                 rs->offset.parts.high = offsetHigh;
                 LONGLONG offset = rs->offset.full;
 
-                if (fli) {
+                if (fli && !IsBadReadPtr(fli, sizeof(struct FILE_LOAD_INFO))) {
                     // adjust offset for multi-part reads
                     SetFilePointer(handle, fli->bytes_read_so_far, NULL, FILE_CURRENT);
                     offset = offset + fli->bytes_read_so_far;
@@ -4663,8 +4671,8 @@ void sider_set_team_id(DWORD *dest, TEAM_INFO_STRUCT *team_info, DWORD offset)
         _away_team_info = team_info;
     }
 
-    BYTE *p = (BYTE*)dest - 0x118;
-    p = (is_home) ? p : p - 0x5ec;
+    BYTE *p = (BYTE*)dest - 0x138;
+    p = (is_home) ? p : p - 0x654;
     MATCH_INFO_STRUCT *mi = (MATCH_INFO_STRUCT*)p;
     //logu_("mi: %p\n", mi);
     //logu_("mi->dw0: 0x%x\n", mi->dw0);
@@ -4686,7 +4694,7 @@ void sider_set_team_id(DWORD *dest, TEAM_INFO_STRUCT *team_info, DWORD offset)
             set_context_field_int("stadium_choice", mi->stadium_choice);
             set_match_info(mi);
 
-            DWORD home = decode_team_id(*(DWORD*)((BYTE*)dest - 0x5ec));
+            DWORD home = decode_team_id(*(DWORD*)((BYTE*)dest - 0x654));
             DWORD away = decode_team_id(*team_id_encoded);
 
             set_context_field_int("home_team", home);
@@ -4868,13 +4876,14 @@ char* sider_stadium_name(STAD_INFO_STRUCT *stad_info, LONGLONG rdx, LONGLONG ptr
 
 STAD_INFO_STRUCT* sider_def_stadium_name(DWORD stadium_id)
 {
+    logu_("sider_def_stadium_name:: called for %d\n", stadium_id);
     memset(&_stadium_info, 0, sizeof(STAD_INFO_STRUCT));
     _stadium_info.id = stadium_id;
     strcpy((char*)&_stadium_info.name, "Unknown stadium");
     return &_stadium_info;
 }
 
-void sider_set_stadium_choice(MATCH_INFO_STRUCT *mi, BYTE stadium_choice)
+void sider_set_stadium_choice(MATCH_INFO_STRUCT *mi, WORD stadium_choice)
 {
     _stadium_choice_count++;
     DBG(16) logu_("set_stadium_choice: mi->stadium_choice=%d, stadium_choice=%d\n", mi->stadium_choice, stadium_choice);
@@ -4886,7 +4895,7 @@ void sider_set_stadium_choice(MATCH_INFO_STRUCT *mi, BYTE stadium_choice)
             vector<module_t*>::iterator i;
             for (i = _modules.begin(); i != _modules.end(); i++) {
                 module_t *m = *i;
-                BYTE new_stadium_choice;
+                WORD new_stadium_choice;
                 if (module_set_stadium_choice(m, stadium_choice, &new_stadium_choice)) {
                     mi->stadium_choice = new_stadium_choice;
                     break;
@@ -5202,7 +5211,7 @@ void hook_call_rdx_with_head_and_tail_and_moved_call(BYTE *loc, BYTE *p, BYTE *h
     }
     DWORD protection = 0 ;
     DWORD newProtection = PAGE_EXECUTE_READWRITE;
-    if (VirtualProtect(loc, head_size + 12 + tail_size, newProtection, &protection)) {
+    if (VirtualProtect(loc, head_size + 12 + tail_size + 0x100, newProtection, &protection)) {
         int old_call_offs = *(int*)(moved_call_old + 1);
         memcpy(loc, head, head_size);   // head code
         memcpy(loc+head_size, "\x48\xba", 2);
@@ -5214,6 +5223,9 @@ void hook_call_rdx_with_head_and_tail_and_moved_call(BYTE *loc, BYTE *p, BYTE *h
         *(int*)(moved_call_new + 1) = new_call_offs;
 
         log_(L"hook_call_rdx_with_head_and_tail_and_moved_call: hooked at %p (target: %p)\n", loc, p);
+        //if (VirtualProtect(loc, head_size + 12 + tail_size, protection, &newProtection)) {
+        //    log_(L"restored page protection at: %p\n", loc);
+        //}
     }
 }
 
@@ -6829,6 +6841,7 @@ bool all_found(config_t *cfg) {
         );
     }
     if (cfg->_lua_enabled) {
+        //all = all && true;
         all = all && (
             cfg->_hp_at_set_team_id > 0 &&
             cfg->_hp_at_set_settings > 0 &&
@@ -6842,7 +6855,6 @@ bool all_found(config_t *cfg) {
             cfg->_hp_at_check_kit_choice > 0 &&
             cfg->_hp_at_get_uniparam > 0 &&
             cfg->_hp_at_data_ready > 0 &&
-            //cfg->_hp_at_call_to_move > 0 &&
             cfg->_hp_at_kit_status > 0 &&
             cfg->_hp_at_set_team_for_kits > 0 &&
             cfg->_hp_at_clear_team_for_kits > 0 &&
@@ -6954,7 +6966,6 @@ bool hook_if_all_found() {
             log_(L"sider_set_stadium_choice: %p\n", sider_set_stadium_choice_hk);
             log_(L"sider_check_kit_choice: %p\n", sider_check_kit_choice_hk);
             log_(L"sider_data_ready: %p\n", sider_data_ready_hk);
-            //log_(L"call_to_move at: %p\n", _config->_hp_at_call_to_move);
 
             if (_config->_hook_set_team_id) {
                 BYTE *check_addr = _config->_hp_at_set_team_id - offs_set_team_id + offs_check_set_team_id;
