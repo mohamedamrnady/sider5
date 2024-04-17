@@ -174,14 +174,8 @@ struct MATCH_INFO_STRUCT {
     DWORD difficulty;
     BYTE match_time;
     BYTE unknown3[3];
-    DWORD unknown4[3];
-    BYTE extra_time_choice;
-    BYTE unknown7;
-    BYTE unknown8;
-    BYTE penalties;
-    BYTE unknown_zero;
-    BYTE num_subs; //subs
-    BYTE num_subs_et; //subs in extra time
+    DWORD unknown4[4];
+    BYTE db0x03;
     BYTE db0x17;
     WORD stadium_choice;
     WORD unknown5;
@@ -191,16 +185,8 @@ struct MATCH_INFO_STRUCT {
     DWORD season_choice; // 0-summer, 1-winter
     DWORD unknown9[10];
     struct STAD_STRUCT stad;
-    BYTE unknown10[0xa0];
-    BYTE home_player_kit_id;
-    BYTE home_player_kit_id_unknown[3];
-    BYTE away_player_kit_id;
-    BYTE away_player_kit_id_unknown[3];
-    BYTE home_gk_kit_id;
-    BYTE home_gk_kit_id_unknown[3];
-    BYTE away_gk_kit_id;
-    BYTE away_gk_kit_id_unknown[3];
-    DWORD unknown11[2];
+    DWORD unknown8;
+    BYTE unknown9[0x98];
     TEAM_INFO_STRUCT home;
     TEAM_INFO_STRUCT away;
 };
