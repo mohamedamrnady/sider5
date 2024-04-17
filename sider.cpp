@@ -295,6 +295,7 @@ TEAM_INFO_STRUCT *_away_team_info = NULL;
 DWORD _edit_team_id;
 
 extern "C" SCOREBOARD_INFO *_sci = NULL;
+BYTE *_sci_vtable = NULL;
 int _stats_table_index = 0;
 int _match_lib_index = 0;
 
@@ -747,10 +748,6 @@ extern "C" BYTE* sider_loaded_uniparam(BYTE *uniparam);
 extern "C" void sider_loaded_uniparam_hk();
 
 extern "C" void sider_copy_clock_hk();
-
-extern "C" void sider_clear_sc(SCOREBOARD_INFO *sci);
-
-extern "C" void sider_clear_sc_hk();
 
 extern "C" void sider_set_edit_team_id_hk();
 
@@ -1671,7 +1668,16 @@ static int sider_match_get_stats(lua_State *L) {
         lua_pushnil(L);
         return 1;
     }
-    //logu_("_sci = %p\n", _sci);
+    if (_sci_vtable == NULL) {
+        _sci_vtable = _sci->vtable;
+    }
+    else if (_sci_vtable != _sci->vtable) {
+        // looks like object has changed, or being destroyed
+        // do not try to use its fields
+        lua_pushnil(L);
+        return 1;
+    }
+
     lua_pushvalue(L, lua_upvalueindex(1));
 
     lua_pushstring(L, "ptr");
@@ -4727,6 +4733,7 @@ void sider_set_team_id(DWORD *dest, TEAM_INFO_STRUCT *team_info, DWORD offset)
             clear_context_fields(_context_fields, _context_fields_count);
             _stadium_choice_count = 0;
             _sci = NULL;
+            _sci_vtable = NULL;
         }
         else {
             _tournament_id = mi->tournament_id_encoded;
@@ -4862,6 +4869,7 @@ void sider_context_reset()
     _stadium_choice_count = 0;
     _mi = NULL;
     _sci = NULL;
+    _sci_vtable = NULL;
     _home_team_info = NULL;
     _away_team_info = NULL;
 
@@ -5082,13 +5090,6 @@ BYTE* sider_loaded_uniparam(BYTE* uniparam)
         }
     }
     return uniparam;
-}
-
-void sider_clear_sc(SCOREBOARD_INFO *sci)
-{
-    lock_t lock(&_cs);
-    logu_("clearing _sci: %p --> 0\n", sci);
-    _sci = NULL;
 }
 
 void sider_check_kit_choice(MATCH_INFO_STRUCT *mi, DWORD home_or_away)
@@ -6671,7 +6672,7 @@ DWORD install_func(LPVOID thread_param) {
     hook_cache_t hcache(cache_file);
 
     // prepare patterns
-#define NUM_PATTERNS 32
+#define NUM_PATTERNS 31
     BYTE *frag[NUM_PATTERNS];
     frag[0] = lcpk_pattern_at_read_file;
     frag[1] = lcpk_pattern_at_get_size;
@@ -6702,9 +6703,8 @@ DWORD install_func(LPVOID thread_param) {
     frag[26] = pattern_clear_team_for_kits;
     frag[27] = pattern_uniparam_loaded;
     frag[28] = pattern_copy_clock;
-    frag[29] = pattern_clear_sc;
-    frag[30] = pattern_xinput;
-    frag[31] = pattern_set_edit_team_id;
+    frag[29] = pattern_xinput;
+    frag[30] = pattern_set_edit_team_id;
 
     memset(_variations, 0xff, sizeof(_variations));
     _variations[0] = 23;
@@ -6742,9 +6742,8 @@ DWORD install_func(LPVOID thread_param) {
     frag_len[26] = _config->_lua_enabled ? sizeof(pattern_clear_team_for_kits)-1 : 0;
     frag_len[27] = _config->_lua_enabled ? sizeof(pattern_uniparam_loaded)-1 : 0;
     frag_len[28] = _config->_lua_enabled ? sizeof(pattern_copy_clock)-1 : 0;
-    frag_len[29] = _config->_lua_enabled ? sizeof(pattern_clear_sc)-1 : 0;
-    frag_len[30] = _config->_lua_enabled ? sizeof(pattern_xinput)-1 : 0;
-    frag_len[31] = _config->_lua_enabled ? sizeof(pattern_set_edit_team_id)-1 : 0;
+    frag_len[29] = _config->_lua_enabled ? sizeof(pattern_xinput)-1 : 0;
+    frag_len[30] = _config->_lua_enabled ? sizeof(pattern_set_edit_team_id)-1 : 0;
 
     int offs[NUM_PATTERNS];
     offs[0] = lcpk_offs_at_read_file;
@@ -6776,9 +6775,8 @@ DWORD install_func(LPVOID thread_param) {
     offs[26] = offs_clear_team_for_kits;
     offs[27] = offs_uniparam_loaded;
     offs[28] = offs_copy_clock;
-    offs[29] = offs_clear_sc;
-    offs[30] = offs_xinput;
-    offs[31] = offs_set_edit_team_id;
+    offs[29] = offs_xinput;
+    offs[30] = offs_set_edit_team_id;
 
 
     BYTE **addrs[NUM_PATTERNS];
@@ -6811,9 +6809,8 @@ DWORD install_func(LPVOID thread_param) {
     addrs[26] = &_config->_hp_at_clear_team_for_kits;
     addrs[27] = &_config->_hp_at_uniparam_loaded;
     addrs[28] = &_config->_hp_at_copy_clock;
-    addrs[29] = &_config->_hp_at_clear_sc;
-    addrs[30] = &_config->_hp_at_xinput;
-    addrs[31] = &_config->_hp_at_set_edit_team_id;
+    addrs[29] = &_config->_hp_at_xinput;
+    addrs[30] = &_config->_hp_at_set_edit_team_id;
 
 
     // check hook cache first
@@ -6929,7 +6926,6 @@ bool all_found(config_t *cfg) {
             cfg->_hp_at_clear_team_for_kits > 0 &&
             cfg->_hp_at_uniparam_loaded > 0 &&
             cfg->_hp_at_copy_clock > 0 &&
-            cfg->_hp_at_clear_sc > 0 &&
             cfg->_hp_at_xinput > 0 &&
             cfg->_hp_at_set_edit_team_id > 0 &&
             true
@@ -7108,10 +7104,6 @@ bool hook_if_all_found() {
             hook_call_rcx(_config->_hp_at_set_team_for_kits, (BYTE*)sider_set_team_for_kits_hk, 1);
             hook_call(_config->_hp_at_clear_team_for_kits, (BYTE*)sider_clear_team_for_kits_hk, 4);
             hook_call_rdx(_config->_hp_at_uniparam_loaded, (BYTE*)sider_loaded_uniparam_hk, 0);
-            if (_config->_match_stats_enabled) {
-                hook_call(_config->_hp_at_copy_clock, (BYTE*)sider_copy_clock_hk, 6);
-                hook_call(_config->_hp_at_clear_sc, (BYTE*)sider_clear_sc_hk, 2);
-            }
 
             BYTE *old_moved_call = _config->_hp_at_def_stadium_name + def_stadium_name_moved_call_offs_old;
             BYTE *new_moved_call = _config->_hp_at_def_stadium_name + def_stadium_name_moved_call_offs_new;

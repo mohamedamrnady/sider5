@@ -492,17 +492,6 @@ static BYTE pattern_copy_clock[19] =
     "\x89\x86\x30\x01\x00\x00";
 static int offs_copy_clock = 0;
 
-/*
-0000000140421EE6 | 49 8D 9E E0 00 00 00               | lea rbx,qword ptr ds:[r14+E0]          | scoreboard clear routine
-0000000140421F10 | 49 8D 8E 00 01 00 00               | lea rsi,qword ptr ds:[r14+D0]          |
-0000000140985B54 | 8D 6F 02                           | lea ebp,qword ptr ds:[rdi+2]           |
-*/
-static BYTE pattern_clear_sc[18] =
-    "\x49\x8d\x9e\xe0\x00\x00\x00"
-    "\x49\x8d\x8e\x00\x01\x00\x00"
-    "\x8d\x6f\x02";
-static int offs_clear_sc = 0;
-
 /**
 00000001403F8D27 | FF50 10                  | call qword ptr ds:[rax+10]                 |
 00000001403F8D2A | 8B4B 0C                  | mov ecx,dword ptr ds:[rbx+C]               |

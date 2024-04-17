@@ -26,7 +26,6 @@ extern sider_kit_status:proc
 extern sider_set_team_for_kits:proc
 extern sider_clear_team_for_kits:proc
 extern sider_loaded_uniparam:proc
-extern sider_clear_sc:proc
 extern sider_set_edit_team_id:proc
 
 extern _sci:dq
@@ -537,50 +536,6 @@ sider_copy_clock_hk proc
         ret
 
 sider_copy_clock_hk endp
-
-;0000000156BF2F05 | 49 8D 9E E0 00 00 00               | lea rbx,qword ptr ds:[r14+E0]          | scoreboard clear routine
-;0000000156BF2F0C | 49 8D B6 D0 00 00 00               | lea rsi,qword ptr ds:[r14+D0]          |
-;0000000156BF2F13 | 8D 6F 02                           | lea ebp,qword ptr ds:[rdi+2]           |
-
-sider_clear_sc_hk proc
-
-        push    rcx
-        push    rdx
-        push    r8
-        push    r9
-        push    r10
-        push    r11
-        sub     rsp,28h
-        mov     rcx,r14
-        call    sider_clear_sc
-        add     rsp,28h
-        pop     r11
-        pop     r10
-        pop     r9
-        pop     r8
-        pop     rdx
-        pop     rcx
-        lea rbx, qword ptr [r14+0e0h]
-        lea rsi, qword ptr [r14+0d0h]
-        ret
-
-sider_clear_sc_hk endp
-
-;000000015076670D | 25 00C0FFFF              | and eax,FFFFC000                        |
-;0000000150766712 | 3D 0040FEFF              | cmp eax,FFFE4000                        |
-;0000000150766717 | 75 09                    | jne pes2019.150766722                   |
-;0000000150766719 | C741 20 00000D00         | mov dword ptr ds:[rcx+20],D0000         |
-;0000000150766720 | EB 04                    | jmp pes2019.150766726                   |
-;0000000150766722 | 44:8941 20               | mov dword ptr ds:[rcx+20],r8d           |
-;0000000150766726 | 8B4424 28                | mov eax,dword ptr ss:[rsp+28]           |
-;000000015076672A | 8941 28                  | mov dword ptr ds:[rcx+28],eax           |
-;000000015076672D | 8B4424 30                | mov eax,dword ptr ss:[rsp+30]           |
-;0000000150766731 | 8941 2C                  | mov dword ptr ds:[rcx+2C],eax           | set edit team id
-;0000000150766734 | B0 01                    | mov al,1                                |
-;0000000150766736 | 44:8949 24               | mov dword ptr ds:[rcx+24],r9d           |
-;000000015076673A | 48:8951 10               | mov qword ptr ds:[rcx+10],rdx           |
-;000000015076673E | 48:C701 02000000         | mov qword ptr ds:[rcx],2                |
-;0000000150766745 | C3                       | ret                                     |
 
 sider_set_edit_team_id_hk proc
 

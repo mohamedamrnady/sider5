@@ -104,7 +104,6 @@ public:
     BYTE *_hp_at_clear_team_for_kits;
     BYTE *_hp_at_uniparam_loaded;
     BYTE *_hp_at_copy_clock;
-    BYTE *_hp_at_clear_sc;
     BYTE *_hp_at_xinput;
     BYTE *_hp_at_set_edit_team_id;
 
@@ -178,7 +177,6 @@ public:
                  _hp_at_clear_team_for_kits(NULL),
                  _hp_at_uniparam_loaded(NULL),
                  _hp_at_copy_clock(NULL),
-                 _hp_at_clear_sc(NULL),
                  _hp_at_xinput(NULL),
                  _hp_at_set_edit_team_id(NULL),
                  _hp_at_set_min_time(NULL),
