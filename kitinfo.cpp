@@ -72,52 +72,6 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
         return;
     }
 
-    // unknowns
-    /**
-    Unk_Offset0x13_AllBits=0    ; 0-255 range
-    Unk_Offset0x1C_Bits0to1=0   ; 0-3 range
-    Unk_Offset0x23_Bits1to7=0   ; 0-127 range
-    Unk_Offset0x24_Bits0to4=0   ; 0-31 range
-    Unk_Offset0x25_Bits2to7=0   ; 0-63 range
-    Unk_Offset0x26_AllBits=0    ; 0-255 range
-    Unk_Offset0x27_AllBits=0    ; 0-255 range
-    **/
-    lua_getfield(L, index, "Unk_Offset0x13_AllBits");
-    if (lua_isnumber(L, -1)) {
-        dst[0x13] = luaL_checkinteger(L, -1);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "Unk_Offset0x1C_Bits0to1");
-    if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x1c, luaL_checkinteger(L, -1), 0, 2);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "Unk_Offset0x23_Bits1to7");
-    if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x22, luaL_checkinteger(L, -1), 9, 16);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "Unk_Offset0x24_Bits0to4");
-    if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x24, luaL_checkinteger(L, -1), 0, 5);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "Unk_Offset0x25_Bits2to7");
-    if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x24, luaL_checkinteger(L, -1), 10, 16);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "Unk_Offset0x26_AllBits");
-    if (lua_isnumber(L, -1)) {
-        dst[0x26] = luaL_checkinteger(L, -1);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "Unk_Offset0x27_AllBits");
-    if (lua_isnumber(L, -1)) {
-        dst[0x27] = luaL_checkinteger(L, -1);
-    }
-    lua_pop(L, 1);
-
     // shirt parameters
     /**
     ShortSleevesModel=1       ; 1=Normal
@@ -501,31 +455,6 @@ void get_kit_info_to_lua_table(lua_State *L, int index, BYTE *src) {
     }
 
     index--; // adjust index, because we will be pushing values
-
-    // unknowns
-    /**
-    Unk_Offset0x13_AllBits=0    ; 0-255 range
-    Unk_Offset0x1C_Bits0to1=0   ; 0-3 range
-    Unk_Offset0x23_Bits1to7=0   ; 0-127 range
-    Unk_Offset0x24_Bits0to4=0   ; 0-31 range
-    Unk_Offset0x25_Bits2to7=0   ; 0-63 range
-    Unk_Offset0x26_AllBits=0    ; 0-255 range
-    Unk_Offset0x27_AllBits=0    ; 0-255 range
-    **/
-    lua_pushinteger(L, src[0x13]);
-    lua_setfield(L, index, "Unk_Offset0x13_AllBits");
-    lua_pushinteger(L, get_word_bits(src+0x1c, 0, 2));
-    lua_setfield(L, index, "Unk_Offset0x1C_Bits0to1");
-    lua_pushinteger(L, get_word_bits(src+0x22, 9, 16));
-    lua_setfield(L, index, "Unk_Offset0x23_Bits1to7");
-    lua_pushinteger(L, get_word_bits(src+0x24, 0, 5));
-    lua_setfield(L, index, "Unk_Offset0x24_Bits0to4");
-    lua_pushinteger(L, get_word_bits(src+0x24, 10, 16));
-    lua_setfield(L, index, "Unk_Offset0x25_Bits2to7");
-    lua_pushinteger(L, src[0x26]);
-    lua_setfield(L, index, "Unk_Offset0x26_AllBits");
-    lua_pushinteger(L, src[0x27]);
-    lua_setfield(L, index, "Unk_Offset0x27_AllBits");
 
     // shirt parameters
     /**
