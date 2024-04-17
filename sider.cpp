@@ -175,7 +175,7 @@ struct MATCH_INFO_STRUCT {
     BYTE match_time;
     BYTE unknown3[3];
     DWORD unknown4[4];
-    BYTE db0x03;
+    BYTE num_subs;
     BYTE db0x17;
     WORD stadium_choice;
     WORD unknown5;
@@ -183,7 +183,7 @@ struct MATCH_INFO_STRUCT {
     DWORD weather_choice;   // 0-fine, 1-rainy, 2-snow
     DWORD weather_effects; // 0-nothing, 1-later, 2-now
     DWORD season_choice; // 0-summer, 1-winter
-    DWORD unknown9[10];
+    DWORD unknown7[10];
     struct STAD_STRUCT stad;
     DWORD unknown8;
     BYTE unknown9[0x98];
@@ -304,8 +304,7 @@ const char *_context_fields[] = {
     "match_id", "match_info", "match_leg",// "match_time",
     "away_team", "home_team", "stadium_choice", "stadium",
     "weather", "weather_effects", "timeofday", "season",
-    "tournament_id", "mis", "sci", "difficulty", "extra_time", "penalties",
-    "substitutions", "substitutions_in_extra_time",
+    "tournament_id", "mis", "sci", "difficulty", "substitutions",
 };
 size_t _context_fields_count = sizeof(_context_fields)/sizeof(const char *);
 
@@ -2230,14 +2229,8 @@ bool module_set_match_settings(module_t *m, MATCH_INFO_STRUCT *mi)
         lua_newtable(L);
         lua_pushinteger(L, mi->difficulty);
         lua_setfield(L, -2, "difficulty");
-        lua_pushinteger(L, mi->extra_time_choice);
-        lua_setfield(L, -2, "extra_time");
-        lua_pushinteger(L, mi->penalties);
-        lua_setfield(L, -2, "penalties");
         lua_pushinteger(L, mi->num_subs);
         lua_setfield(L, -2, "substitutions");
-        lua_pushinteger(L, mi->num_subs_et);
-        lua_setfield(L, -2, "substitutions_in_extra_time");
         if (lua_pcall(L, 2, 1, 0) != LUA_OK) {
             const char *err = luaL_checkstring(L, -1);
             logu_("[%d] lua ERROR from module_set_match_settings: %s\n", GetCurrentThreadId(), err);
@@ -2248,24 +2241,9 @@ bool module_set_match_settings(module_t *m, MATCH_INFO_STRUCT *mi)
                 mi->difficulty = luaL_checkinteger(L, -1);
             }
             lua_pop(L, 1);
-            lua_getfield(L, -1, "extra_time");
-            if (lua_isnumber(L, -1)) {
-                mi->extra_time_choice = luaL_checkinteger(L, -1);
-            }
-            lua_pop(L, 1);
-            lua_getfield(L, -1, "penalties");
-            if (lua_isnumber(L, -1)) {
-                mi->penalties = luaL_checkinteger(L, -1);
-            }
-            lua_pop(L, 1);
             lua_getfield(L, -1, "substitutions");
             if (lua_isnumber(L, -1)) {
                 mi->num_subs = luaL_checkinteger(L, -1);
-            }
-            lua_pop(L, 1);
-            lua_getfield(L, -1, "substitutions_in_extra_time");
-            if (lua_isnumber(L, -1)) {
-                mi->num_subs_et = luaL_checkinteger(L, -1);
             }
             lua_pop(L, 1);
             res = true;
@@ -4750,10 +4728,10 @@ void sider_set_settings(STAD_STRUCT *dest_ss, STAD_STRUCT *src_ss)
     bool ok = mi && (mi->num_subs >= 0 && mi->num_subs <= 11) && (mi->db0x17 >= 0x10 && mi->db0x17 < 0x20);
     if (!ok) {
         // safety check
-        DBG(16) logu_("%02x %02x %02x\n", mi->num_subs, mi->num_subs_et, mi->db0x17);
+        DBG(16) logu_("%02x %02x %02x\n", mi->num_subs, mi->db0x17);
         return;
     }
-    DBG(16) logu_("%02x %02x %02x (ok)\n", mi->num_subs, mi->num_subs_et, mi->db0x17);
+    DBG(16) logu_("%02x %02x %02x (ok)\n", mi->num_subs, mi->db0x17);
 
     logu_("tournament_id: %d\n", mi->tournament_id_encoded);
 
@@ -4801,10 +4779,7 @@ void sider_set_settings(STAD_STRUCT *dest_ss, STAD_STRUCT *src_ss)
         }
 
         set_context_field_int("difficulty", mi->difficulty);
-        set_context_field_int("extra_time", mi->extra_time_choice);
-        set_context_field_int("penalties", mi->penalties);
         set_context_field_int("substitutions", mi->num_subs);
-        set_context_field_int("substitutions_in_extra_time", mi->num_subs_et);
 
         // clear stadium_choice in context
         //set_context_field_nil("stadium_choice");
@@ -5848,12 +5823,6 @@ static int sider_context_register(lua_State *L)
         lua_pushvalue(L, -1);
         lua_xmove(L, _curr_m->L, 1);
         _curr_m->evt_set_conditions = lua_gettop(_curr_m->L);
-        logu_("Registered for \"%s\" event\n", event_key);
-    }
-    else if (strcmp(event_key, "set_match_settings")==0) {
-        lua_pushvalue(L, -1);
-        lua_xmove(L, _curr_m->L, 1);
-        _curr_m->evt_set_match_settings = lua_gettop(_curr_m->L);
         logu_("Registered for \"%s\" event\n", event_key);
     }
     else if (strcmp(event_key, "after_set_conditions")==0) {
