@@ -81,7 +81,6 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
     ShirtPattern=3       ; 0 to 6
     WinterCollar=123       ; 1 to 126
     LongSleevesType=62       ; 62=Normal & Undershirt, 187=Only Undershirt
-    SleeveLimits=0          ; 0=No restrictions, 1=Only long, 2=Only short
     **/
     lua_getfield(L, index, "ShortSleevesModel");
     if (lua_isnumber(L, -1)) {
@@ -118,23 +117,16 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
         dst[0x15] = luaL_checkinteger(L, -1);
     }
     lua_pop(L, 1);
-    lua_getfield(L, index, "SleeveLimits");
-    if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x1a, luaL_checkinteger(L, -1), 13, 15);
-    }
-    lua_pop(L, 1);
 
     /**
     ; shirt - back side
     Name=0       ; 0=On, 1=Off
     NameShape=0       ; 0=Straight, 1=Light curve, 2=Medium curve, 3=Extreme curve
-    NameY=15       ; 0 to 39, after merging one unknown bit directly preceding old NameY
+    NameY=15       ; 0 to 17
     NameSize=15       ; 0 to 31
-    NameStretch=0       ; 0 to 3
     BackNumberY=21       ; 0 to 29
     BackNumberSize=26       ; 0 to 31
-    BackNumberSpacing=1       ; 0 to 15
-    BackNumberType=0       ; 0 to 1
+    BackNumberSpacing=1       ; 0 to 3
     **/
     lua_getfield(L, index, "Name");
     if (lua_isnumber(L, -1)) {
@@ -148,17 +140,12 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
     lua_pop(L, 1);
     lua_getfield(L, index, "NameY");
     if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x1c, luaL_checkinteger(L, -1), 3, 9);
+        set_word_bits(dst+0x1c, luaL_checkinteger(L, -1), 4, 9);
     }
     lua_pop(L, 1);
     lua_getfield(L, index, "NameSize");
     if (lua_isnumber(L, -1)) {
         set_word_bits(dst+0x1c, luaL_checkinteger(L, -1), 9, 14);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "NameStretch");
-    if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x25, luaL_checkinteger(L, -1), 0, 2);
     }
     lua_pop(L, 1);
     lua_getfield(L, index, "BackNumberY");
@@ -173,19 +160,14 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
     lua_pop(L, 1);
     lua_getfield(L, index, "BackNumberSpacing");
     if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x18, luaL_checkinteger(L, -1), 10, 14);
-    }
-    lua_pop(L, 1);
-    lua_getfield(L, index, "BackNumberType");
-    if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x1c, luaL_checkinteger(L, -1), 2, 3);
+        set_word_bits(dst+0x18, luaL_checkinteger(L, -1), 12, 14);
     }
     lua_pop(L, 1);
 
     /**
     ; shirt - front side
     ChestNumberX=5       ; 0 to 31
-    ChestNumberY=5       ; new max - 0 to 29 - two unknown bits directly preceding old ChestNumberY can be merged together
+    ChestNumberY=5       ; 0 to 7
     ChestNumberSize=14       ; 0 to 31
     **/
     lua_getfield(L, index, "ChestNumberX");
@@ -195,9 +177,7 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
     lua_pop(L, 1);
     lua_getfield(L, index, "ChestNumberY");
     if (lua_isnumber(L, -1)) {
-        int num = luaL_checkinteger(L, -1);
-        set_word_bits(dst+0x18, num, 14, 16);
-        set_word_bits(dst+0x1a, num >> 2, 0, 3);
+        set_word_bits(dst+0x1a, luaL_checkinteger(L, -1), 0, 3);
     }
     lua_pop(L, 1);
     lua_getfield(L, index, "ChestNumberSize");
@@ -210,8 +190,8 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
     ; shorts parameters
     ShortsModel=2       ; 0 to 17
     ShortsNumberSide=0       ; 0=Left, 1=Right
-    ShortsNumberX=9       ; 0 to 31
-    ShortsNumberY=10       ; 0 to 31
+    ShortsNumberX=9       ; 0 to 14
+    ShortsNumberY=10       ; 0 to 15
     ShortsNumberSize=9       ; 0 to 31
     **/
     lua_getfield(L, index, "ShortsModel");
@@ -226,12 +206,12 @@ void set_kit_info_from_lua_table(lua_State *L, int index, BYTE *dst, BYTE *radar
     lua_pop(L, 1);
     lua_getfield(L, index, "ShortsNumberX");
     if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x16, luaL_checkinteger(L, -1), 5, 10);
+        set_word_bits(dst+0x16, luaL_checkinteger(L, -1), 6, 10);
     }
     lua_pop(L, 1);
     lua_getfield(L, index, "ShortsNumberY");
     if (lua_isnumber(L, -1)) {
-        set_word_bits(dst+0x16, luaL_checkinteger(L, -1), 0, 5);
+        set_word_bits(dst+0x16, luaL_checkinteger(L, -1), 0, 4);
     }
     lua_pop(L, 1);
     lua_getfield(L, index, "ShortsNumberSize");
@@ -465,7 +445,6 @@ void get_kit_info_to_lua_table(lua_State *L, int index, BYTE *src) {
     ShirtPattern=3       ; 0 to 6
     WinterCollar=123       ; 1 to 126
     LongSleevesType=62       ; 62=Normal & Undershirt, 187=Only Undershirt
-    SleeveLimits=0          ; 0=No restrictions, 1=Only long, 2=Only short
     **/
     lua_pushinteger(L, src[0]);
     lua_setfield(L, index, "ShortSleevesModel");
@@ -481,51 +460,41 @@ void get_kit_info_to_lua_table(lua_State *L, int index, BYTE *src) {
     lua_setfield(L, index, "ShirtPattern");
     lua_pushinteger(L, src[0x15]);
     lua_setfield(L, index, "WinterCollar");
-    lua_pushinteger(L, get_word_bits(src+0x1a, 13, 15));
-    lua_setfield(L, index, "SleeveLimits");
 
     /**
     ; shirt - back side
     Name=0       ; 0=On, 1=Off
     NameShape=0       ; 0=Straight, 1=Light curve, 2=Medium curve, 3=Extreme curve
-    NameY=15       ; 0 to 39, new discovery - merge with one unknown bit preceding old NameY
+    NameY=15       ; 0 to 17
     NameSize=15       ; 0 to 31
-    NameStretch=0       ; 0 to 3
     BackNumberY=21       ; 0 to 29
     BackNumberSize=26      ; 0 to 31
-    BackNumberSpacing=1       ; 0 to 15
-    BackNumberType=0       ; 0 to 1
+    BackNumberSpacing=1       ; 0 to 3
     **/
     lua_pushinteger(L, get_word_bits(src+0x1e, 0, 1));
     lua_setfield(L, index, "Name");
     lua_pushinteger(L, get_word_bits(src+0x1c, 14, 16));
     lua_setfield(L, index, "NameShape");
-    lua_pushinteger(L, get_word_bits(src+0x1c, 3, 9));
+    lua_pushinteger(L, get_word_bits(src+0x1c, 4, 9));
     lua_setfield(L, index, "NameY");
     lua_pushinteger(L, get_word_bits(src+0x1c, 9, 14));
     lua_setfield(L, index, "NameSize");
-    lua_pushinteger(L, get_word_bits(src+0x25, 0, 2));
-    lua_setfield(L, index, "NameStretch");
     lua_pushinteger(L, get_word_bits(src+0x18, 0, 5));
     lua_setfield(L, index, "BackNumberY");
     lua_pushinteger(L, get_word_bits(src+0x18, 5, 10));
     lua_setfield(L, index, "BackNumberSize");
-    lua_pushinteger(L, get_word_bits(src+0x18, 10, 14));
+    lua_pushinteger(L, get_word_bits(src+0x18, 12, 14));
     lua_setfield(L, index, "BackNumberSpacing");
-    lua_pushinteger(L, get_word_bits(src+0x1c, 2, 3));
-    lua_setfield(L, index, "BackNumberType");
 
     /**
     ; shirt - front side
     ChestNumberX=5       ; 0 to 31
-    ChestNumberY=5       ; new max - 0 to 29 - two unknown bits directly preceding old ChestNumberY can be merged together
+    ChestNumberY=5       ; 0 to 7
     ChestNumberSize=14       ; 0 to 31
     **/
     lua_pushinteger(L, get_word_bits(src+0x1a, 3, 8));
     lua_setfield(L, index, "ChestNumberX");
-    int num = get_word_bits(src+0x18, 14, 16);
-    num += (get_word_bits(src+0x1a, 0, 3) << 2);
-    lua_pushinteger(L, num);
+    lua_pushinteger(L, get_word_bits(src+0x1a, 0, 3));
     lua_setfield(L, index, "ChestNumberY");
     lua_pushinteger(L, get_word_bits(src+0x1a, 8, 13));
     lua_setfield(L, index, "ChestNumberSize");
@@ -534,17 +503,17 @@ void get_kit_info_to_lua_table(lua_State *L, int index, BYTE *src) {
     ; shorts parameters
     ShortsModel=2       ; 0 to 17
     ShortsNumberSide=0       ; 0=Left, 1=Right
-    ShortsNumberX=9       ; 0 to 31
-    ShortsNumberY=10       ; 0 to 31
+    ShortsNumberX=9       ; 0 to 14
+    ShortsNumberY=10       ; 0 to 15
     ShortsNumberSize=9       ; 0 to 31
     **/
     lua_pushinteger(L, src[3]);
     lua_setfield(L, index, "ShortsModel");
     lua_pushinteger(L, get_word_bits(src+0x16, 15, 16));
     lua_setfield(L, index, "ShortsNumberSide");
-    lua_pushinteger(L, get_word_bits(src+0x16, 5, 10));
+    lua_pushinteger(L, get_word_bits(src+0x16, 6, 10));
     lua_setfield(L, index, "ShortsNumberX");
-    lua_pushinteger(L, get_word_bits(src+0x16, 0, 5));
+    lua_pushinteger(L, get_word_bits(src+0x16, 0, 4));
     lua_setfield(L, index, "ShortsNumberY");
     lua_pushinteger(L, get_word_bits(src+0x16, 10, 15));
     lua_setfield(L, index, "ShortsNumberSize");
@@ -603,7 +572,7 @@ void get_kit_info_to_lua_table(lua_State *L, int index, BYTE *src) {
     lua_setfield(L, index, "RightShortX");
     lua_pushinteger(L, get_word_bits(src+0x20, 0, 5));
     lua_setfield(L, index, "RightShortY");
-    num = get_word_bits(src+0x20, 15, 16);
+    int num = get_word_bits(src+0x20, 15, 16);
     num  +=  (get_word_bits(src+0x22, 0, 4) << 1);
     lua_pushinteger(L, num);
     lua_setfield(L, index, "RightLongX");
