@@ -143,20 +143,20 @@ static BYTE pattern_set_settings_tail[13] =
 0000000141EE81EF | D1 FD                              | sar ebp,1                              |
 */
 static BYTE pattern_trophy_check[20] =
-    "\x4c\x8d\xae\x00\xc4\x00\x00"
-    "\x8b\x8e\x98\x04\x00\x00"
+    "\x4c\x8d\xa5\xf0\xc3\x00\x00"
+    "\x8b\x8d\x88\x04\x00\x00"
     "\x41\x80\xe6\x01"
-    "\xd1\xfd";
+    "\xd1\xfe";
 static int offs_trophy_check = 7;
 
-/**
+
 static BYTE pattern_trophy_check_head[5] =
     "\x48\x83\xec\x28";
 
 static BYTE pattern_trophy_check_tail[10] =
     "\x48\x85\xd2"
     "\x0f\x84\x8d\x00\x00\x00";
-**/
+
 
 /*
 0000000140A0DF3C | 48 89 8B 84 00 00 00                 | mov qword ptr ds:[rbx+84],rcx           |
@@ -210,7 +210,7 @@ static BYTE patch_set_minutes[6] =
 
 static BYTE pattern_sider[13] =
     "\xf2\x0f\x10\x00"
-    "\xf2\x0f\x11\x83\xa8\x00\x00\x00";
+    "\xf2\x0f\x11\x83\xa4\x00\x00\x00";
 static int offs_sider = 0;
 
 // tournament_id --> trophy_id table
@@ -228,7 +228,7 @@ static int offs_sider = 0;
 static BYTE pattern_trophy_table[18] =
     "\x48\x63\xc1"
     "\x8b\x44\xc4\x04"
-    "\x48\x8b\x8d\x40\x09\x00\x00"
+    "\x48\x8b\x8d\x60\x09\x00\x00"
     "\x48\x31\xe1";
 static int offs_trophy_table = 30;
 
@@ -485,10 +485,10 @@ static int offs_uniparam_loaded = -(0x81e - 0x7ee - 8);
 0000000140A32A5C | FF 0C                              | mov eax,dword ptr ds:[rdi+10]          |
 0000000140A32A5E | 89 86 30 01 00 00                  | mov dword ptr ds:[rsi+130],eax         |
 */
-static BYTE pattern_copy_clock[17] =
-    "\xff\x0c"
+static BYTE pattern_copy_clock[19] =
+    "\x8b\x47\x0c"
     "\x89\x86\x2c\x01\x00\x00"
-    "\xff\x0c"
+    "\x8b\x47\x10"
     "\x89\x86\x30\x01\x00\x00";
 static int offs_copy_clock = 0;
 
@@ -521,31 +521,27 @@ static BYTE pattern_xinput[12] =
 static int offs_xinput = 11;
 
 /**
-0000000141F0DA7D | 25 00C0FFFF                   | and eax,FFFFC000                           |
-0000000141F0DA82 | 3D 0040FEFF                   | cmp eax,FFFE4000                           |
-0000000141F0DA87 | 75 09                         | jne pes2021.141F0DA92                      |
-0000000141F0DA89 | C741 20 00000D00              | mov dword ptr ds:[rcx+20],D0000            |
-0000000141F0DA90 | EB 11                         | jmp pes2021.141F0DAA3                      |
-0000000141F0DA92 | 48:8D41 20                    | lea rax,qword ptr ds:[rcx+20]              |
-0000000141F0DA96 | 4C:8D5424 18                  | lea r10,qword ptr ss:[rsp+18]              |
-0000000141F0DA9B | 49:3BC2                       | cmp rax,r10                                |
-0000000141F0DA9E | 74 03                         | je pes2021.141F0DAA3                       |
-0000000141F0DAA0 | 44:8900                       | mov dword ptr ds:[rax],r8d                 | set edit team id
-0000000141F0DAA3 | 8B4424 28                     | mov eax,dword ptr ss:[rsp+28]              |
-0000000141F0DAA7 | 8941 28                       | mov dword ptr ds:[rcx+28],eax              |
-0000000141F0DAAA | 8B4424 30                     | mov eax,dword ptr ss:[rsp+30]              |
-0000000141F0DAAE | 8941 2C                       | mov dword ptr ds:[rcx+2C],eax              |
-0000000141F0DAB1 | B0 01                         | mov al,1                                   |
-0000000141F0DAB3 | 44:8949 24                    | mov dword ptr ds:[rcx+24],r9d              |
-0000000141F0DAB7 | 48:8951 10                    | mov qword ptr ds:[rcx+10],rdx              |
-0000000141F0DABB | 48:C701 02000000              | mov qword ptr ds:[rcx],2                   |
-0000000141F0DAC2 | C3                            | ret                                        |
+000000015076670D | 25 00C0FFFF              | and eax,FFFFC000                        |
+0000000150766712 | 3D 0040FEFF              | cmp eax,FFFE4000                        |
+0000000150766717 | 75 09                    | jne pes2019.150766722                   |
+0000000150766719 | C741 20 00000D00         | mov dword ptr ds:[rcx+20],D0000         |
+0000000150766720 | EB 04                    | jmp pes2019.150766726                   |
+0000000150766722 | 44:8941 20               | mov dword ptr ds:[rcx+20],r8d           |
+0000000150766726 | 8B4424 28                | mov eax,dword ptr ss:[rsp+28]           |
+000000015076672A | 8941 28                  | mov dword ptr ds:[rcx+28],eax           |
+000000015076672D | 8B4424 30                | mov eax,dword ptr ss:[rsp+30]           |
+0000000150766731 | 8941 2C                  | mov dword ptr ds:[rcx+2C],eax           | set edit team id
+0000000150766734 | B0 01                    | mov al,1                                |
+0000000150766736 | 44:8949 24               | mov dword ptr ds:[rcx+24],r9d           |
+000000015076673A | 48:8951 10               | mov qword ptr ds:[rcx+10],rdx           |
+000000015076673E | 48:C701 02000000         | mov qword ptr ds:[rcx],2                |
+0000000150766745 | C3                       | ret                                     |
 **/
 static BYTE pattern_set_edit_team_id[20] =
     "\x25\x00\xc0\xff\xff"
     "\x3d\x00\x40\xfe\xff"
     "\x75\x09"
     "\xc7\x41\x20\x00\x00\x0d\x00";
-static int offs_set_edit_team_id = 0xb3 - 0x7d;
+static int offs_set_edit_team_id = 0x36 - 0x0d;
 
 #endif

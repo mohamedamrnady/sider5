@@ -154,11 +154,11 @@ struct TEAM_INFO_STRUCT {
     BYTE team_name[0x46];
     BYTE team_abbr[4];
     BYTE unknown1[2];
-    BYTE unknown2[0x588];
+    BYTE unknown2[0x538];
     SHIRTCOLOR_STRUCT players[2];
     SHIRTCOLOR_STRUCT goalkeepers[1];
     SHIRTCOLOR_STRUCT extra_players[7];
-    BYTE unknown3[0x68];
+    BYTE unknown3[0x14];
 };
 
 struct MATCH_INFO_STRUCT {
@@ -275,7 +275,7 @@ struct SCHEDULE_ENTRY {
     DWORD unknown4;
 };
 
-#define TT_LEN 0x148
+#define TT_LEN 0x14b
 TROPHY_TABLE_ENTRY _trophy_table[TT_LEN];
 TROPHY_TABLE_ENTRY _trophy_map[TT_LEN];
 int64_t _trophy_table_copy_count;

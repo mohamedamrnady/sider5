@@ -37,10 +37,9 @@ sider_read_file_hk proc
         mov     rax,[rsp+28h]
         sub     rsp,38h
         mov     [rsp+20h],rax
-        mov     rax,[r9+20h]
-        mov     [rsp+28h],rax
+        mov     [rsp+28h],r12
         call    sider_read_file
-        ;mov     r12,[rsp+28h]
+        mov     r12,[rsp+28h]
         add     rsp,38h
         ret
 
@@ -53,7 +52,7 @@ sider_get_size_hk proc
         mov     rcx,rsi
         mov     rdx,rbx
         call    sider_get_size
-        mov     rcx,qword ptr [rdi+1d0h]
+        mov     rcx,qword ptr [rdi+1d8h]
         mov     eax,1
         mov     rdx,[rsp+20h]
         add     rsp,28h
@@ -66,19 +65,19 @@ sider_extend_cpk_hk proc
         mov     rax,1000000000000000h
         mov     qword ptr [rdi+8],rax
         mov     qword ptr [r13],rdi
-        xor     rax,rax
         ret
 
 sider_extend_cpk_hk endp
 
 sider_mem_copy_hk proc
 
-        push    rsp
+        push    r12
         sub     rsp,20h
-        mov     rcx,r11
+        add     r8,r10
         call    sider_mem_copy
         mov     qword ptr [rdi+10h],rbx
-        add     rsp,28h
+        add     rsp,20h
+        pop     r12
         ret
 
 sider_mem_copy_hk endp
@@ -88,7 +87,7 @@ sider_lookup_file_hk proc
         push    rax
         sub     rsp,20h
         call    sider_lookup_file
-        lea     rcx,qword ptr [rdi+108h]
+        lea     rcx,qword ptr [rdi+110h]
         mov     r8,rsi
         lea     rdx,qword ptr [rsp+50h]
         add     rsp,20h
@@ -117,8 +116,8 @@ sider_set_team_id_hk proc
         mov     [rsp+30h],rax
         cmp     eax,2
         jge     done
-        imul    r8,rax,654h
-        add     rcx,138h
+        imul    r8,rax,5ech
+        add     rcx,118h
         add     rcx,r8
         mov     [rsp+20h],rcx
         mov     [rsp+28h],r8
@@ -151,8 +150,10 @@ sider_set_settings_hk proc
         push    r10
         push    r11
         sub     rsp,20h
-        mov     rax,qword ptr [rdx+98h]
-        mov     qword ptr [rcx+98h],rax
+        movzx   eax,byte ptr [rdx+97h]
+        mov     byte ptr [rcx+97h],al
+        mov     eax,dword ptr [rdx+98h]
+        mov     dword ptr [rcx+98h],eax
         call    sider_set_settings
         add     rsp,20h
         pop     r11
@@ -170,11 +171,11 @@ sider_trophy_check_hk proc
 
         push    rax
         sub     rsp,20h
-        mov     ecx,dword ptr [rsi+498h]
+        mov     ecx,dword ptr [rbp+488h]
         call    sider_trophy_check
         mov     ecx,eax
         and     r14b,1
-        sar     ebp,1
+        sar     esi,1
         add     rsp,20h
         pop     rax
         ret
@@ -191,7 +192,7 @@ sider_context_reset_hk proc
         push    r11
         sub     rsp,28h
         mov     qword ptr [rbx+84h],rcx
-        mov     qword ptr [rbx+201c4h],0ffffffffh
+        mov     qword ptr [rbx+21f74h],0ffffffffh
         call    sider_context_reset
         add     rsp,28h
         pop     r11
@@ -209,8 +210,8 @@ sider_free_select_hk proc
         push    rax
         sub     rsp,20h
         movsd   xmm0,qword ptr [rax]
-        movsd   qword ptr [rbx+0a8h],xmm0
-        lea     rcx,[rbx+0a8h]
+        movsd   qword ptr [rbx+0a4h],xmm0
+        lea     rcx,[rbx+0a4h]
         call    sider_free_select
         add     rsp,20h
         pop     rax
@@ -273,13 +274,7 @@ sider_stadium_name_hk proc
         mov     [rsp+20h],rcx
         mov     [rsp+28h],rdx
         ;mov     rcx,rdx
-        push    r8
-        push    r9
-        mov     r8,rdi
-        mov     r9,rbx
         call    sider_stadium_name
-        pop     r9
-        pop     r8
         mov     rdx,rax
         mov     rcx,[rsp+20h]
         or      r8,0ffffffffffffffffh
@@ -353,24 +348,25 @@ sider_set_stadium_choice_hk endp
 sider_check_kit_choice_hk proc
 
         push    rcx
+        push    rdx
         push    r8
         push    r9
         push    r10
         push    r11
-        push    r14
-        sub     rsp,28h
-        mov     rcx,r14   ;mis - match info struct
-        mov     rdx,r10   ;0/1 - home/away
+        push    r15
+        sub     rsp,20h
+        mov     rcx,rdi   ;mis - match info struct
+        mov     rdx,rbx   ;0/1 - home/away
         call    sider_check_kit_choice
-        add     rsp,28h
-        pop     r14
-        mov     byte ptr [r13-2],1
-        mov     byte ptr [r13],0
-        mov     edx,esi
+        add     rsp,20h
+        pop     r15
+        mov     byte ptr [r15-2],1
+        mov     byte ptr [r15],0
         pop     r11
         pop     r10
         pop     r9
         pop     r8
+        pop     rdx
         pop     rcx
         ret
 
@@ -425,9 +421,9 @@ sider_kit_status_hk proc
         mov     rcx,rbx
         mov     rdx,rax
         call    sider_kit_status
-        movzx   r9d, byte ptr [rbx+4ah]
-        movzx   r8d, byte ptr [rbx+49h]
-        movzx   rdx, byte ptr [rbx+48h]
+        movzx   r9d, byte ptr [rbx+4eh]
+        movzx   r8d, byte ptr [rbx+4dh]
+        movzx   rdx, byte ptr [rbx+4ch]
         add     rsp,28h
         pop     rax
         pop     r11
@@ -452,8 +448,9 @@ sider_set_team_for_kits_hk proc
         xor     edx,eax
         and     edx,3fffh
         xor     edx,eax
-        mov     dword ptr [r9],edx
+        mov     dword ptr [r9+10h],edx
         mov     rcx,rbx
+        add     r9,10h
         call    sider_set_team_for_kits
         mov     rcx,3fffh
         add     rsp,28h
@@ -478,10 +475,10 @@ sider_clear_team_for_kits_hk proc
         push    r10
         push    r11
         sub     rsp,28h
-        mov     dword ptr [rdx],ecx
+        mov     dword ptr [rdx-4h],ecx
         mov     dword ptr [rdx+18h],0ffffh
-        mov     dword ptr [rdx+30h],0ffffffffh
         mov     rcx,rbx
+        sub     rdx,4
         call    sider_clear_team_for_kits
         mov     rax,3fffh
         add     rsp,28h
@@ -510,7 +507,7 @@ sider_loaded_uniparam_hk proc
         sub     rsp,28h
         mov     rcx,rax
         call    sider_loaded_uniparam
-        mov     [rsi+48h],rax
+        mov     [rsi+38h],rax
         add     rsp,28h
         pop     r11
         pop     r10
@@ -569,25 +566,21 @@ sider_clear_sc_hk proc
 
 sider_clear_sc_hk endp
 
-;0000000141F0DA7D | 25 00C0FFFF                   | and eax,FFFFC000                           |
-;0000000141F0DA82 | 3D 0040FEFF                   | cmp eax,FFFE4000                           |
-;0000000141F0DA87 | 75 09                         | jne pes2021.141F0DA92                      |
-;0000000141F0DA89 | C741 20 00000D00              | mov dword ptr ds:[rcx+20],D0000            |
-;0000000141F0DA90 | EB 11                         | jmp pes2021.141F0DAA3                      |
-;0000000141F0DA92 | 48:8D41 20                    | lea rax,qword ptr ds:[rcx+20]              |
-;0000000141F0DA96 | 4C:8D5424 18                  | lea r10,qword ptr ss:[rsp+18]              |
-;0000000141F0DA9B | 49:3BC2                       | cmp rax,r10                                |
-;0000000141F0DA9E | 74 03                         | je pes2021.141F0DAA3                       |
-;0000000141F0DAA0 | 44:8900                       | mov dword ptr ds:[rax],r8d                 | set edit team id
-;0000000141F0DAA3 | 8B4424 28                     | mov eax,dword ptr ss:[rsp+28]              |
-;0000000141F0DAA7 | 8941 28                       | mov dword ptr ds:[rcx+28],eax              |
-;0000000141F0DAAA | 8B4424 30                     | mov eax,dword ptr ss:[rsp+30]              |
-;0000000141F0DAAE | 8941 2C                       | mov dword ptr ds:[rcx+2C],eax              |
-;0000000141F0DAB1 | B0 01                         | mov al,1                                   |
-;0000000141F0DAB3 | 44:8949 24                    | mov dword ptr ds:[rcx+24],r9d              |
-;0000000141F0DAB7 | 48:8951 10                    | mov qword ptr ds:[rcx+10],rdx              |
-;0000000141F0DABB | 48:C701 02000000              | mov qword ptr ds:[rcx],2                   |
-;0000000141F0DAC2 | C3                            | ret                                        |
+;000000015076670D | 25 00C0FFFF              | and eax,FFFFC000                        |
+;0000000150766712 | 3D 0040FEFF              | cmp eax,FFFE4000                        |
+;0000000150766717 | 75 09                    | jne pes2019.150766722                   |
+;0000000150766719 | C741 20 00000D00         | mov dword ptr ds:[rcx+20],D0000         |
+;0000000150766720 | EB 04                    | jmp pes2019.150766726                   |
+;0000000150766722 | 44:8941 20               | mov dword ptr ds:[rcx+20],r8d           |
+;0000000150766726 | 8B4424 28                | mov eax,dword ptr ss:[rsp+28]           |
+;000000015076672A | 8941 28                  | mov dword ptr ds:[rcx+28],eax           |
+;000000015076672D | 8B4424 30                | mov eax,dword ptr ss:[rsp+30]           |
+;0000000150766731 | 8941 2C                  | mov dword ptr ds:[rcx+2C],eax           | set edit team id
+;0000000150766734 | B0 01                    | mov al,1                                |
+;0000000150766736 | 44:8949 24               | mov dword ptr ds:[rcx+24],r9d           |
+;000000015076673A | 48:8951 10               | mov qword ptr ds:[rcx+10],rdx           |
+;000000015076673E | 48:C701 02000000         | mov qword ptr ds:[rcx],2                |
+;0000000150766745 | C3                       | ret                                     |
 
 sider_set_edit_team_id_hk proc
 
